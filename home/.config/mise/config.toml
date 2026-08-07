@@ -1,0 +1,8 @@
+[tools]
+node = "22"
+python = "3.13"
+
+[settings]
+experimental = true
+# Prefer prebuilt CPython; compiling against Homebrew libs is brittle after zap.
+python.compile = false

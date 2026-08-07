@@ -12,6 +12,10 @@
     home = "/Users/${user}";
   };
   system.stateVersion = 6;
+
+  # /etc/pam.d is SIP-protected on this macOS; managing sudo_local fails activation.
+  security.pam.services.sudo_local.enable = false;
+
   system.defaults = {
     NSGlobalDomain = {
       AppleInterfaceStyle = "Dark";
@@ -28,72 +32,33 @@
   nix-homebrew = {
     enable = true;
     inherit user;
+    # Adopt the existing /opt/homebrew install; keeps bottles, replaces Homebrew itself.
+    autoMigrate = true;
   };
   homebrew = {
     enable = true;
     onActivation.cleanup = "zap";  # remove anything not listed here
-    onActivation.autoUpdate = true;
+    # autoUpdate off: Homebrew's cask API currently breaks `powershell` fetch mid-bundle.
+    onActivation.autoUpdate = false;
     onActivation.extraFlags = [ "--force" ];
 
-    # Survival list for this machine: tools used across Projects that are not
-    # already provided by home.nix (ripgrep/fd/fzf/jq/lazygit/neovim).
-    # Leaf libraries brew pulls in transitively are intentionally omitted.
+    # Minimal brew: darwin gaps + agent multiplexer. Everyday CLIs live in home.nix.
     brews = [
-      # agents / terminal
       "herdr"
-
-      # shell / cli
-      "bat"
-      "gh"
-      "git-delta"
-      "git-lfs"
-      "httpie"
-      "mkcert"
-      "p7zip"
-      "zoxide"
-
-      # runtimes / build
-      "cmake"
-      "dotnet"
-      "go"
-      "nvm"
-      "pipx"
-
-      # containers
       "colima"
       "docker"
       "docker-buildx"
       "docker-compose"
       "docker-credential-helper"
-
-      # data
-      "libpq"
-      "pgcli"
-
-      # cloud
-      "awscli"
-      "azure-cli"
-      "cloudflared"
-
-      # kubernetes
-      "helm"
-      "k3d"
-      "kind"
-      "krew"
-      "kubernetes-cli"
-      "kubectx"
-      "kustomize"
-      "opentofu"
     ];
     casks = [
+      "1password-cli"
       "claude-code"
       "dotnet-sdk"
       "espanso"
-      "gcloud-cli"
       "maccy"
       "multipass"
       "ollama-app"
-      "powershell"
       "temurin"
       "wezterm@nightly"
     ];

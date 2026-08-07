@@ -16,13 +16,15 @@ If you find a bug, please open a GitHub Issue using the bug report template.
 Running the switch builds:
 
 - System settings (dark mode, key repeat, dock, Finder, trackpad)
-- Homebrew apps (casks and CLI tools)
-- Nix user packages (ripgrep, fd, fzf, jq, lazygit, Neovim, Hack Nerd Font)
-- Shell (zsh, aliases, starship prompt)
+- Nix user packages for everyday and cloud/k8s CLIs (ripgrep, fd, fzf, bat, gh, kubectl, helm, aws/azure/gcloud CLIs, and more)
+- mise for Node and Python versions (global defaults in `home/.config/mise/config.toml`; per-project overrides via `.mise.toml`)
+- Minimal Homebrew: Colima/Docker CLI stack, `herdr`, and GUI/darwin casks (WezTerm, .NET SDK, 1Password CLI, etc.)
+- PowerShell via Nix (`pwsh`); the Homebrew powershell cask currently breaks `brew bundle`
+- Shell (home-manager zsh, aliases, starship, direnv, zoxide) - not Oh My Zsh
 - Editor (Neovim config with the rose-pine moon theme)
 - Terminal (WezTerm config with the rose-pine moon theme and dimmed unfocused windows)
-- Agent configs (Claude, Codex, opencode all share one AGENTS.md)
-- Optional Pi theme and local extensions, generic UI settings and model overrides, plus two deliberately pinned third-party Pi packages
+- Agent configs (Claude, Codex, opencode, and `~/AGENTS.md` all share one `home/AGENTS.md`)
+- Optional Pi theme and local extensions, generic UI settings and model overrides, plus pinned third-party Pi packages
 
 ## Prerequisites
 
@@ -106,13 +108,32 @@ programs.git = {
 ```
 
 **Homebrew cleanup warning:** `configuration.nix` sets `homebrew.onActivation.cleanup = "zap"`.
-That means every time you switch, Homebrew removes any package or cask on your machine that isn't listed in the `brews` and `casks` arrays in `configuration.nix`.
-If you already have Homebrew stuff installed that isn't in that list, the first switch will uninstall it.
-Read through `brews` and `casks` before you run `bootstrap.sh` or `rebuild.sh` for the first time, and add anything you want to keep.
+Brew is intentionally minimal here - CLIs come from Nix, runtimes from mise.
+Every switch removes any Homebrew package or cask that isn't listed in `brews` / `casks`.
+Read those lists before the first `bootstrap.sh` or `rebuild.sh`, and add anything you still need via brew.
 
 **About `herdr`:** it's in the `brews` list.
 It's a real public Homebrew formula (`brew info herdr` finds it in homebrew-core, no tap needed), so it will install fine.
 If you don't use it, just remove it from `brews` in your copy.
+
+**After the first switch (mise / npm):** Nix does not install Node itself - mise does.
+
+```sh
+mise install
+# optional: reinstall platform npm globals under mise's Node
+npm install -g wrangler @hubspot/cli azurite azure-functions-core-tools
+```
+
+You can remove old `~/.nvm` once projects run on mise. Oh My Zsh is unused after home-manager owns zsh; delete `~/.oh-my-zsh` when you're ready.
+
+If Homebrew leaves a few root-owned kegs behind after zap (for example `certbot` or `python@3.12`), remove them once with:
+
+```sh
+sudo rm -rf /opt/homebrew/Cellar/certbot /opt/homebrew/Cellar/python@3.12
+brew autoremove
+```
+
+**Secrets:** `home/.config/zsh/dev-local-secrets.zsh` loads `CONTEXT7_API_KEY` and `AZURE_DEVOPS_EXT_PAT` from 1Password using `~/.config/op/service-account-dev-local.token` (not in git). Install the token file locally if those exports are empty.
 
 **Heads-up:**
 
@@ -126,7 +147,7 @@ If you don't use it, just remove it from `brews` in your copy.
 - `flake.nix` - the entry point.
   Wires up nixpkgs, nix-darwin, home-manager, and nix-homebrew, and declares the `mac` machine.
 - `configuration.nix` - system-level config: macOS defaults, Homebrew.
-- `home.nix` - user-level config: shell, packages, prompt, and the symlinks described below.
+- `home.nix` - user-level config: shell, Nix packages, mise, prompt, and the symlinks described below.
 - `rebuild.sh` - re-applies the config after the first switch.
   Run this every time you make a change.
 - `home/` - the actual config files that get symlinked into place; the sections below explain the shared symlink model and Pi's narrower selective setup.
