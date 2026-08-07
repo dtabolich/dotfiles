@@ -2,7 +2,7 @@ local wezterm = require("wezterm")
 
 local config = wezterm.config_builder()
 
-config.color_scheme = "Gruvbox Material (Gogh)"
+config.color_scheme = "rose-pine-moon"
 -- Home Manager installs nerd-fonts.jetbrains-mono here; point WezTerm at it so a
 -- cold start after a switch doesn't miss the family before CoreText indexes it.
 config.font_dirs = { wezterm.home_dir .. "/Library/Fonts/HomeManager" }
