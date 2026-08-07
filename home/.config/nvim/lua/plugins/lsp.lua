@@ -47,10 +47,11 @@ return {
       }
 
       for name, opts in pairs(servers) do
-        require('lspconfig')[name].setup(vim.tbl_deep_extend('force', {
+        vim.lsp.config(name, vim.tbl_deep_extend('force', {
           on_attach = on_attach,
           capabilities = capabilities,
         }, opts))
+        vim.lsp.enable(name)
       end
     end,
   },
