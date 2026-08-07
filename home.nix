@@ -27,7 +27,7 @@ in
     netcat-gnu
     tree-sitter
     # the font everything renders in
-    nerd-fonts.jetbrains-mono
+    nerd-fonts.hack
 
     # build / languages (versions also via mise for node/python)
     cmake
