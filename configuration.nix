@@ -34,12 +34,68 @@
     onActivation.cleanup = "zap";  # remove anything not listed here
     onActivation.autoUpdate = true;
     onActivation.extraFlags = [ "--force" ];
+
+    # Survival list for this machine: tools used across Projects that are not
+    # already provided by home.nix (ripgrep/fd/fzf/jq/lazygit/neovim).
+    # Leaf libraries brew pulls in transitively are intentionally omitted.
     brews = [
+      # agents / terminal
       "herdr"
+
+      # shell / cli
+      "bat"
+      "gh"
+      "git-delta"
+      "git-lfs"
+      "httpie"
+      "mkcert"
+      "p7zip"
+      "zoxide"
+
+      # runtimes / build
+      "cmake"
+      "dotnet"
+      "go"
+      "nvm"
+      "pipx"
+
+      # containers
+      "colima"
+      "docker"
+      "docker-buildx"
+      "docker-compose"
+      "docker-credential-helper"
+
+      # data
+      "libpq"
+      "pgcli"
+
+      # cloud
+      "awscli"
+      "azure-cli"
+      "cloudflared"
+
+      # kubernetes
+      "helm"
+      "k3d"
+      "kind"
+      "krew"
+      "kubernetes-cli"
+      "kubectx"
+      "kustomize"
+      "opentofu"
     ];
     casks = [
-      "wezterm"
       "claude-code"
+      "dotnet-sdk"
+      "espanso"
+      "gcloud-cli"
+      "maccy"
+      "multipass"
+      "ollama-app"
+      "powershell"
+      "temurin"
+      "wezterm@nightly"
     ];
   };
 }

@@ -28,6 +28,20 @@ in
     syntaxHighlighting.enable = true;  # commands turn green when valid
     initContent = ''
       bindkey '^f' autosuggest-accept
+
+      # nvm: Homebrew only (do not also enable an OMZ nvm plugin — double-loads).
+      export NVM_DIR="$HOME/.nvm"
+      if [ -s "/opt/homebrew/opt/nvm/nvm.sh" ]; then
+        . "/opt/homebrew/opt/nvm/nvm.sh"
+      fi
+      if [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ]; then
+        . "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+      fi
+
+      # zoxide (brew); `z` jumps to frecent directories
+      if (( $+commands[zoxide] )); then
+        eval "$(zoxide init zsh)"
+      fi
     '';
     shellAliases = {
       ".." = "cd ..";
