@@ -10,16 +10,16 @@ Everything here comes from `home.nix` and the symlinked configs under `home/`.
 - `Ctrl+F` accepts an autosuggestion. Tab opens an fzf menu for any completion.
 - Aliases (from `home.nix`):
 
-  | Alias | Does |
-  |---|---|
-  | `ll` / `la` / `lt` | `eza` long / all / tree listing with icons + git status |
-  | `cat` | `bat` (syntax-highlighted, no paging) |
-  | `v` / `vi` / `vim` | `nvim` |
-  | `lg` | `lazygit` TUI |
-  | `m` | `git switch main` |
-  | `add` / `push` / `pull` | git shortcuts |
-  | `cola` / `colstop` / `cols` | colima start/stop/status |
-  | `cc` / `co` | `claude --dangerously-skip-permissions` / `codex --full-auto` (know what these do) |
+  | Alias                       | Does                                                                               |
+  | --------------------------- | ---------------------------------------------------------------------------------- |
+  | `ll` / `la` / `lt`          | `eza` long / all / tree listing with icons + git status                            |
+  | `cat`                       | `bat` (syntax-highlighted, no paging)                                              |
+  | `v` / `vi` / `vim`          | `nvim`                                                                             |
+  | `lg`                        | `lazygit` TUI                                                                      |
+  | `m`                         | `git switch main`                                                                  |
+  | `add` / `push` / `pull`     | git shortcuts                                                                      |
+  | `cola` / `colstop` / `cols` | colima start/stop/status                                                           |
+  | `cc` / `co`                 | `claude --dangerously-skip-permissions` / `codex --full-auto` (know what these do) |
 
 ## Navigation and history
 
@@ -49,21 +49,21 @@ First launch bootstraps `lazy.nvim` from GitHub - needs network once, then offli
 
 Leader is `\` (default). The keys that matter:
 
-| Key | Action |
-|---|---|
-| `<leader>f` | Find files (Snacks picker) |
-| `<leader>s` | Grep across project |
-| `<leader>b` | Switch buffers |
-| `<leader>e` | Open oil.nvim file browser |
-| `gd` | Go to definition |
-| `gr` | References |
-| `gi` | Implementation |
-| `gD` | Declaration |
-| `K` | Hover docs |
-| `<leader>ca` | Code action |
-| `<leader>rn` | Rename symbol |
-| `<leader>d` | Line diagnostics |
-| `[d` / `]d` | Prev / next diagnostic |
+| Key          | Action                     |
+| ------------ | -------------------------- |
+| `<leader>f`  | Find files (Snacks picker) |
+| `<leader>s`  | Grep across project        |
+| `<leader>b`  | Switch buffers             |
+| `<leader>e`  | Open oil.nvim file browser |
+| `gd`         | Go to definition           |
+| `gr`         | References                 |
+| `gi`         | Implementation             |
+| `gD`         | Declaration                |
+| `K`          | Hover docs                 |
+| `<leader>ca` | Code action                |
+| `<leader>rn` | Rename symbol              |
+| `<leader>d`  | Line diagnostics           |
+| `[d` / `]d`  | Prev / next diagnostic     |
 
 LSP servers (`gopls`, `pyright`, `nil_ls`, `lua_ls`, `marksman`, `ts_ls`), formatters (`nixpkgs-fmt`, `shfmt`, `stylua`, `ruff`, `prettier`, `gofmt`), and linters (`golangci-lint`, `shellcheck`, `statix`, `ruff`) are all installed via Nix - format-on-save is on, linting runs on save and buffer enter.
 
@@ -104,16 +104,16 @@ python = "3.12"
 
 Prefix is `Ctrl+B`. From `home/.config/herdr/config.toml`:
 
-| Key | Action |
-|---|---|
-| `prefix + "` | Split horizontal |
-| `prefix + %` | Split vertical |
-| `prefix + h/j/k/l` | Focus left/down/up/right |
-| `prefix + c` | New tab |
-| `prefix + &` | Close tab |
-| `prefix + w` | Workspace picker |
-| `prefix + g` | Goto |
-| `prefix + y` | Copy mode (v/Space select, y/Enter copy, q/Esc exit) |
+| Key                | Action                                               |
+| ------------------ | ---------------------------------------------------- |
+| `prefix + "`       | Split horizontal                                     |
+| `prefix + %`       | Split vertical                                       |
+| `prefix + h/j/k/l` | Focus left/down/up/right                             |
+| `prefix + c`       | New tab                                              |
+| `prefix + &`       | Close tab                                            |
+| `prefix + w`       | Workspace picker                                     |
+| `prefix + g`       | Goto                                                 |
+| `prefix + y`       | Copy mode (v/Space select, y/Enter copy, q/Esc exit) |
 
 ## Secrets
 

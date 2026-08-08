@@ -192,6 +192,12 @@ in
         . "$HOME/.config/zsh/dev-local-secrets.zsh"
       fi
 
+      # 1Password SSH agent - replaces macOS keychain for git/git-ssh auth.
+      # Requires "Set up the SSH agent" enabled in 1Password > Settings > Developer.
+      if [ -S "$HOME/.1password/agent.sock" ]; then
+        export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"
+      fi
+
       # Friendlier defaults when tools are on PATH
       if (( $+commands[bat] )); then
         alias cat='bat --paging=never'

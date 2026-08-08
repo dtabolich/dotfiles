@@ -1,5 +1,6 @@
 local o = vim.opt
 vim.g.mapleader = ' '          -- space is the leader key
+o.termguicolors = true          -- use the colorscheme's true 24-bit colors
 o.expandtab = true             -- spaces, not tabs
 o.shiftwidth = 2               -- 2 spaces per indent level
 o.number = true                -- absolute number on the cursor line, relative elsewhere
