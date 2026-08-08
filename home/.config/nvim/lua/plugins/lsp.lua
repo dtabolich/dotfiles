@@ -32,13 +32,16 @@ return {
       end
 
       -- Servers are installed via Nix (home.nix); lspconfig just wires them up.
-      -- nil_ls = nix, lua_ls = lua (nvim/wezterm config), ts_ls = typescript.
+      -- nil_ls = nix, lua_ls = lua (nvim/wezterm config), ts_ls = typescript,
+      -- taplo = toml (mise/direnv/starship), yamlls = yaml (k8s/CI configs).
       local servers = {
         gopls = {},
         pyright = {},
         nil_ls = {},
         marksman = {},
         ts_ls = {},
+        taplo = {},
+        yamlls = {},
         lua_ls = {
           settings = {
             Lua = { diagnostics = { globals = { 'vim', 'Snacks' } } },

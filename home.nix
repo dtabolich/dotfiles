@@ -37,6 +37,9 @@ in
     # data
     libpq
     pgcli
+    duckdb                     # in-process OLAP; query CSV/Parquet/JSON/SQLite via SQL
+    usql                       # universal SQL CLI (postgres/mysql/sqlite/sqlserver/duckdb)
+    miller                     # jq for CSV/TSV/tabular data
 
     # cloud / k8s
     awscli2
@@ -63,6 +66,8 @@ in
     lua-language-server         # nvim + wezterm config
     marksman                    # markdown
     typescript-language-server  # ts/js (needs node on PATH via mise)
+    taplo                       # toml LSP + formatter (mise/direnv/starship config)
+    yaml-language-server        # yaml LSP (k8s/CI configs)
 
     # formatters (consumed by conform.nvim)
     nixpkgs-fmt
@@ -90,6 +95,7 @@ in
     git-absorb                  # automatic fixup commits for stacked branches
     gh-dash                     # TUI dashboard for GitHub PRs/issues via gh
     onefetch                    # repo summary on cd
+    actionlint                  # lint GitHub Actions workflows
     # containers / k8s
     k9s                         # kubernetes TUI
     lazydocker                  # docker TUI, pairs with colima
@@ -105,6 +111,7 @@ in
     tealdeer                    # fast tldr cheatsheets
     sops                        # secrets management (pairs with 1password)
     age                         # modern encryption for sops
+    gitleaks                    # secret scanner; run as a pre-commit hook
     # system monitoring
     bottom                      # rust htop replacement (btm)
     dust                        # du replacement, intuitive disk usage
@@ -163,6 +170,12 @@ in
       init.defaultBranch = "main";
       pull.rebase = true;
       fetch.prune = true;
+      # Transparently route HTTPS git URLs through SSH (and thus 1Password's SSH
+      # agent) for the common hosts. Azure DevOps is excluded because its SSH
+      # URL format rearranges the path (_git/ -> v3/); use `git2ssh` for that.
+      url."git@github.com:".insteadOf = "https://github.com/";
+      url."git@gitlab.com:".insteadOf = "https://gitlab.com/";
+      url."git@bitbucket.org:".insteadOf = "https://bitbucket.org/";
     };
   };
 
@@ -194,6 +207,7 @@ in
 
       # 1Password SSH agent - replaces macOS keychain for git/git-ssh auth.
       # Requires "Set up the SSH agent" enabled in 1Password > Settings > Developer.
+      # The symlink ~/.1password/agent.sock is created by home-manager (see home.nix).
       if [ -S "$HOME/.1password/agent.sock" ]; then
         export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"
       fi
@@ -223,6 +237,29 @@ in
 
       # Krew (if plugins were installed previously)
       export PATH="''${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+
+      # git2ssh - rewrite the current repo's origin from HTTPS to SSH.
+      # Handles GitHub/GitLab/Bitbucket (simple host swap) and Azure DevOps
+      # (dev.azure.com and *.visualstudio.com -> ssh.dev.azure.com:v3, _git/ -> v3/).
+      # The insteadOf git config already rewrites the common hosts transparently,
+      # so this is mainly for Azure DevOps or when you want the stored remote to be SSH.
+      git2ssh() {
+        local url new
+        url=$(git remote get-url origin 2>/dev/null) || { echo "no origin remote"; return 1; }
+        case "$url" in
+          git@*) echo "already SSH: $url"; return 0 ;;
+          https://github.com/*)     new="git@github.com:''${url#https://github.com/}" ;;
+          https://gitlab.com/*)    new="git@gitlab.com:''${url#https://gitlab.com/}" ;;
+          https://bitbucket.org/*) new="git@bitbucket.org:''${url#https://bitbucket.org/}" ;;
+          https://dev.azure.com/*/_git/*|https://*.visualstudio.com/*/_git/*)
+            local rest="''${url#https://*/}"      # org/project/_git/repo
+            local repo="''${rest##*/_git/}"
+            local orgproj="''${rest%/_git/$repo}"
+            new="git@ssh.dev.azure.com:v3/$orgproj/$repo" ;;
+          *) echo "unrecognized URL: $url"; return 1 ;;
+        esac
+        git remote set-url origin "$new" && echo "$url -> $new"
+      }
     '';
     shellAliases = {
       ".." = "cd ..";
@@ -246,12 +283,21 @@ in
     enable = true;
     settings = {
       add_newline = false;
-      format = "$directory$git_branch$git_status$nodejs$python$dotnet$golang$kubernetes$docker_context$cmd_duration$line_break$character";
+      # Modules: dir (truncated) -> git -> language runtimes (auto-detected per
+      # project) -> direnv (only with .envrc).
+      # docker_context, cmd_duration, and kubernetes intentionally dropped -
+      # docker was noise (always-on when Colima is the active context), duration
+      # added clutter, and k8s context is rare in the regular flow.
+      format = "$directory$git_branch$git_status$nodejs$python$dotnet$golang$direnv$line_break$character";
       character = {
         success_symbol = "[❯](purple)";
         error_symbol = "[❯](red)";
       };
-      cmd_duration.format = "[$duration]($style) ";
+      directory = {
+        truncation_length = 3;
+        truncation_symbol = "…/";
+        truncate_to_repo = true;
+      };
       nodejs = {
         format = "[$symbol($version )]($style)";
         symbol = "node ";
@@ -268,13 +314,10 @@ in
         format = "[$symbol($version )]($style)";
         symbol = "go ";
       };
-      kubernetes = {
-        format = "[$symbol$context ]($style)";
-        symbol = "k8s ";
-      };
-      docker_context = {
-        format = "[$symbol$context ]($style)";
-        symbol = "docker ";
+      direnv = {
+        disabled = false;
+        format = "[$symbol$loaded/$allowed]($style) ";
+        symbol = "direnv ";
       };
     };
   };
@@ -312,4 +355,10 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".config/opencode/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+
+  # 1Password SSH agent lives in its sandboxed Group Container; expose it at a
+  # stable, machine-agnostic path so SSH_AUTH_SOCK in zsh init can point at it.
+  # The socket only exists while 1Password is running; a dangling symlink is fine.
+  home.file.".1password/agent.sock".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock";
 }
