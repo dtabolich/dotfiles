@@ -26,8 +26,23 @@ in
     mkcert
     netcat-gnu
     tree-sitter
-    # the font everything renders in
+    # WezTerm fonts (loaded via ~/Library/Fonts/HomeManager in wezterm.lua).
+    # Cycle with Alt+Shift+F / Alt+Shift+B; default is FiraMono Nerd Font.
+    nerd-fonts.fira-mono
+    nerd-fonts.fira-code
     nerd-fonts.hack
+    nerd-fonts.jetbrains-mono
+    nerd-fonts.caskaydia-cove         # Cascadia Code
+    nerd-fonts.geist-mono
+    nerd-fonts.commit-mono
+    nerd-fonts.monaspace              # Neon/Argon/Xenon/Radon/Krypton
+    nerd-fonts.iosevka-term
+    nerd-fonts.blex-mono              # IBM Plex Mono
+    nerd-fonts.intone-mono            # Intel One Mono
+    nerd-fonts.victor-mono
+    nerd-fonts.zed-mono
+    nerd-fonts.martian-mono
+    nerd-fonts.sauce-code-pro         # Source Code Pro
 
     # build / languages (versions also via mise for node/python)
     cmake
@@ -333,6 +348,8 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/mise";
   home.file.".config/zsh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/zsh";
+  home.file.".local/bin/sanitize-paste".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.local/bin/sanitize-paste";
   home.file.".claude/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
 

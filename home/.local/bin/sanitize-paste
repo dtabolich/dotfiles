@@ -1,0 +1,72 @@
+#!/usr/bin/env perl
+# sanitize-paste - make the macOS clipboard safe to paste into a terminal.
+#
+# Fixes the formatting breakage that happens when commands are copied out of an
+# agent chat as plain text and pasted into WezTerm:
+#   - smart/curly quotes, en/em dashes, ellipsis, nbsp, zero-width & bidi chars
+#   - markdown code fences (```, ~~~)
+#   - common interactive prompt prefixes ($, >, ❯, ›, PS C:\...>)
+#   - consistent indentation from "indented code block" rendering
+#   - trailing whitespace that silently breaks backslash line continuations
+#   - CRLF from Windows-flavored copy sources
+#
+# Reads the clipboard itself (pbpaste), prints the cleaned text to stdout so
+# the caller can send it to the terminal without touching the real clipboard.
+
+use strict;
+use warnings;
+use utf8;
+use Encode qw(decode_utf8 encode_utf8);
+
+my $clip = decode_utf8(`pbpaste`);
+exit 0 if !defined $clip || $clip eq "";
+
+# Windows CRLF / lone CR to LF
+$clip =~ s/\r\n/\n/g;
+$clip =~ s/\r/\n/g;
+
+# Unicode lookalikes to ASCII
+$clip =~ s/[\x{2018}\x{2019}\x{201B}]/'/g;  # curly single quotes
+$clip =~ s/[\x{201C}\x{201D}\x{201F}]/"/g;  # curly double quotes
+$clip =~ s/\x{2013}/-/g;                    # en dash
+$clip =~ s/\x{2014}/-/g;                    # em dash
+$clip =~ s/\x{2026}/.../g;                  # ellipsis
+$clip =~ s/\x{00A0}/ /g;                    # non-breaking space
+# zero-width, bidi, word-joiner, BOM
+$clip =~ s/[\x{200B}\x{200C}\x{200D}\x{200E}\x{200F}\x{2060}\x{202A}-\x{202E}\x{FEFF}]//g;
+
+# Drop markdown fenced code-block delimiters (``` and ~~~ lines)
+$clip =~ s/^[ \t]*(?:``+[^\n]*|~+[^\n]*)\n?//gm;
+
+# Dedent: remove the common leading whitespace of all non-empty lines so an
+# indented code block pastes as if it were flush-left.
+if ($clip =~ /\n/) {
+  my $min;
+  for my $line (split /\n/, $clip) {
+    next if $line =~ /^\s*$/;
+    my ($lead) = $line =~ /^([ \t]*)/;
+    my $len = length $lead;
+    $min = $len if !defined $min || $len < $min;
+  }
+  $min = 0 unless defined $min;
+  $clip =~ s/^[ \t]{0,$min}//gm if $min > 0;
+}
+
+# Strip leading interactive prompts, longest form first:
+#   PS C:\...> cmd   (PowerShell)  - handled before the plain '>' strip
+#   $ cmd            (bash/zsh)
+#   ❯ cmd  /  › cmd  (starship / other fancy prompts)
+#   > cmd            (cmd.exe / PowerShell redirect)
+# Only a prompt char followed by whitespace or end-of-line is treated as a
+# prompt, so commands that legitimately start with "$(" or ">" survive.
+$clip =~ s/^PS [^\n]*>\s*//gm;
+$clip =~ s/^\$[ \t]?//gm;
+$clip =~ s/^[>\x{276F}\x{203A}]([ \t]|\z)//gm;
+
+# Strip trailing whitespace so "line \" continuations survive a paste
+$clip =~ s/[ \t]+$//gm;
+
+# Single trailing newline on output
+$clip =~ s/\n+\z/\n/;
+
+print encode_utf8($clip);
