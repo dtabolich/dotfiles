@@ -256,24 +256,56 @@ in
       # git2ssh - rewrite the current repo's origin from HTTPS to SSH.
       # Handles GitHub/GitLab/Bitbucket (simple host swap) and Azure DevOps
       # (dev.azure.com and *.visualstudio.com -> ssh.dev.azure.com:v3, _git/ -> v3/).
-      # The insteadOf git config already rewrites the common hosts transparently,
-      # so this is mainly for Azure DevOps or when you want the stored remote to be SSH.
+      # Azure is excluded from insteadOf because the path must be rearranged; run
+      # this once per Azure repo so 1Password's SSH agent can take over.
       git2ssh() {
-        local url new
+        local url new host org path rest repo project orgproj
         url=$(git remote get-url origin 2>/dev/null) || { echo "no origin remote"; return 1; }
         case "$url" in
-          git@*) echo "already SSH: $url"; return 0 ;;
+          git@*|ssh://*) echo "already SSH: $url"; return 0 ;;
           https://github.com/*)     new="git@github.com:''${url#https://github.com/}" ;;
           https://gitlab.com/*)    new="git@gitlab.com:''${url#https://gitlab.com/}" ;;
           https://bitbucket.org/*) new="git@bitbucket.org:''${url#https://bitbucket.org/}" ;;
-          https://dev.azure.com/*/_git/*|https://*.visualstudio.com/*/_git/*)
-            local rest="''${url#https://*/}"      # org/project/_git/repo
-            local repo="''${rest##*/_git/}"
-            local orgproj="''${rest%/_git/$repo}"
+          https://*.visualstudio.com/*/_git/*)
+            # https://{org}.visualstudio.com[/DefaultCollection]/{project}/_git/{repo}
+            host=''${url#https://}; host=''${host%%/*}
+            org=''${host%.visualstudio.com}
+            path=''${url#https://$host/}
+            path=''${path#DefaultCollection/}
+            repo=''${path##*/_git/}
+            project=''${path%/_git/$repo}
+            new="git@ssh.dev.azure.com:v3/$org/$project/$repo" ;;
+          https://*dev.azure.com/*/_git/*)
+            # https://[user@]dev.azure.com/{org}/{project}/_git/{repo}
+            rest=''${url#https://}
+            rest=''${rest#*@}
+            rest=''${rest#dev.azure.com/}
+            repo=''${rest##*/_git/}
+            orgproj=''${rest%/_git/$repo}
             new="git@ssh.dev.azure.com:v3/$orgproj/$repo" ;;
           *) echo "unrecognized URL: $url"; return 1 ;;
         esac
         git remote set-url origin "$new" && echo "$url -> $new"
+      }
+
+      # skills-link - symlink project .cursor/skills into .claude/skills.
+      # Relative links so clones stay portable; re-run after adding Cursor skills.
+      skills-link() {
+        local root src dest name target linked=0
+        root=$(git rev-parse --show-toplevel 2>/dev/null) || root=$PWD
+        src="$root/.cursor/skills"
+        dest="$root/.claude/skills"
+        [ -d "$src" ] || { echo "no $src"; return 1; }
+        mkdir -p "$dest"
+        for d in "$src"/*(/N); do
+          name=''${d:t}
+          target="../../.cursor/skills/$name"
+          ln -sfn "$target" "$dest/$name"
+          echo "$dest/$name -> $target"
+          linked=$((linked + 1))
+        done
+        [ "$linked" -gt 0 ] || { echo "no skills under $src"; return 1; }
+        echo "linked $linked skill(s)"
       }
     '';
     shellAliases = {
