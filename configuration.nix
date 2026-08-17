@@ -21,7 +21,9 @@
       AppleInterfaceStyle = "Dark";
       KeyRepeat = 2;          # fast key repeat
       InitialKeyRepeat = 15;  # short delay before repeat
-      _HIHideMenuBar = true;  # auto-hide the menu bar
+      # Keep the menu bar visible on normal Spaces/displays. WezTerm native
+      # fullscreen still hides it on its own Space; true would hide it everywhere.
+      _HIHideMenuBar = false;
       AppleShowAllExtensions = true;
     };
     dock.autohide = true;
@@ -45,6 +47,7 @@
     # Minimal brew: darwin gaps + agent multiplexer. Everyday CLIs live in home.nix.
     brews = [
       "herdr"
+      "pi-coding-agent"
       "colima"
       "docker"
       "docker-buildx"

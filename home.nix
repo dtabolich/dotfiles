@@ -410,10 +410,4 @@ in
   # The socket only exists while 1Password is running; a dangling symlink is fine.
   home.file.".1password/agent.sock".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock";
-
-  # Kimi Code CLI is a self-contained Node SEA binary its installer drops at
-  # ~/.kimi-code/bin/kimi (alongside a bundled rg). Expose only `kimi` on PATH
-  # via ~/.local/bin (already in sessionPath) so it doesn't shadow the nix rg.
-  home.file.".local/bin/kimi".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.kimi-code/bin/kimi";
 }

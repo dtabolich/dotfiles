@@ -1,4 +1,10 @@
 onboarding = false
+
+# New spaces/tabs/panes (without an explicit --cwd) start in ~/Projects
+# instead of inheriting the previous pane ("follow").
+[terminal]
+new_cwd = "~/Projects"
+
 [keys]
 prefix = "ctrl+b"
 focus_pane_left  = "prefix+h"

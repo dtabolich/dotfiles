@@ -124,7 +124,7 @@ mise install
 npm install -g wrangler @hubspot/cli azurite azure-functions-core-tools
 ```
 
-You can remove old `~/.nvm` once projects run on mise. Oh My Zsh is unused after home-manager owns zsh; delete `~/.oh-my-zsh` when you're ready.
+Legacy `~/.nvm` and `~/.oh-my-zsh` are gone; Node/tooling is mise, shell is home-manager.
 
 If Homebrew leaves a few root-owned kegs behind after zap (for example `certbot` or `python@3.12`), remove them once with:
 

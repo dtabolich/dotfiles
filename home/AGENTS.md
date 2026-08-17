@@ -1,5 +1,6 @@
 # global agent instructions
 
+- Any VM access (including read-only) requires **fresh explicit approval** in the current user request: which VM and what action. Prior chat mentions are not standing auth. Approval for one VM/purpose never extends to another. Prefer local workspace. See `~/.cursor/rules/no-vm-code-changes.mdc`.
 - Never use the em dash "—". Use plain dash "-" instead
 - When writing commit messages, NEVER auto-add your agent name as co-author
 - Never manually modify CHANGELOG.md files or any files that are marked as auto-generated
