@@ -55,7 +55,6 @@
       "docker-credential-helper"
     ];
     casks = [
-      "1password-cli"
       "claude-code"
       "dotnet-sdk"
       "espanso"

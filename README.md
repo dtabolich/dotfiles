@@ -18,7 +18,7 @@ Running the switch builds:
 - System settings (dark mode, key repeat, dock, Finder, trackpad)
 - Nix user packages for everyday and cloud/k8s CLIs (ripgrep, fd, fzf, bat, gh, kubectl, helm, aws/azure/gcloud CLIs, and more)
 - mise for Node and Python versions (global defaults in `home/.config/mise/config.toml`; per-project overrides via `.mise.toml`)
-- Minimal Homebrew: Colima/Docker CLI stack, `herdr`, and GUI/darwin casks (WezTerm, .NET SDK, 1Password CLI, etc.)
+- Minimal Homebrew: Colima/Docker CLI stack, `herdr`, and GUI/darwin casks (WezTerm, .NET SDK, etc.)
 - PowerShell via Nix (`pwsh`); the Homebrew powershell cask currently breaks `brew bundle`
 - Shell (home-manager zsh, aliases, starship, direnv, zoxide) - not Oh My Zsh
 - Editor (Neovim config with the rose-pine moon theme)
@@ -132,8 +132,6 @@ If Homebrew leaves a few root-owned kegs behind after zap (for example `certbot`
 sudo rm -rf /opt/homebrew/Cellar/certbot /opt/homebrew/Cellar/python@3.12
 brew autoremove
 ```
-
-**Secrets:** `home/.config/zsh/dev-local-secrets.zsh` loads `CONTEXT7_API_KEY` and `AZURE_DEVOPS_EXT_PAT` from 1Password using `~/.config/op/service-account-dev-local.token` (not in git). Install the token file locally if those exports are empty.
 
 **Heads-up:**
 

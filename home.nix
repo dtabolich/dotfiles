@@ -124,7 +124,7 @@ in
     just                        # modern make, plain-text command runner
     hyperfine                   # statistical command benchmarking
     tealdeer                    # fast tldr cheatsheets
-    sops                        # secrets management (pairs with 1password)
+    sops                        # secrets management
     age                         # modern encryption for sops
     gitleaks                    # secret scanner; run as a pre-commit hook
     # system monitoring
@@ -185,9 +185,9 @@ in
       init.defaultBranch = "main";
       pull.rebase = true;
       fetch.prune = true;
-      # Transparently route HTTPS git URLs through SSH (and thus 1Password's SSH
-      # agent) for the common hosts. Azure DevOps is excluded because its SSH
-      # URL format rearranges the path (_git/ -> v3/); use `git2ssh` for that.
+      # Transparently route HTTPS git URLs through SSH for the common hosts.
+      # Azure DevOps is excluded because its SSH URL format rearranges the path
+      # (_git/ -> v3/); use `git2ssh` for that.
       url."git@github.com:".insteadOf = "https://github.com/";
       url."git@gitlab.com:".insteadOf = "https://gitlab.com/";
       url."git@bitbucket.org:".insteadOf = "https://bitbucket.org/";
@@ -213,18 +213,6 @@ in
       # fzf-tab must load before other compinit hooks; source it early.
       if [ -f "${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh" ]; then
         source "${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh"
-      fi
-
-      # 1Password Dev-local secrets (CONTEXT7_API_KEY, AZURE_DEVOPS_EXT_PAT)
-      if [ -r "$HOME/.config/zsh/dev-local-secrets.zsh" ]; then
-        . "$HOME/.config/zsh/dev-local-secrets.zsh"
-      fi
-
-      # 1Password SSH agent - replaces macOS keychain for git/git-ssh auth.
-      # Requires "Set up the SSH agent" enabled in 1Password > Settings > Developer.
-      # The symlink ~/.1password/agent.sock is created by home-manager (see home.nix).
-      if [ -S "$HOME/.1password/agent.sock" ]; then
-        export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"
       fi
 
       # Friendlier defaults when tools are on PATH
@@ -257,7 +245,7 @@ in
       # Handles GitHub/GitLab/Bitbucket (simple host swap) and Azure DevOps
       # (dev.azure.com and *.visualstudio.com -> ssh.dev.azure.com:v3, _git/ -> v3/).
       # Azure is excluded from insteadOf because the path must be rearranged; run
-      # this once per Azure repo so 1Password's SSH agent can take over.
+      # this once per Azure repo to switch its origin to SSH.
       git2ssh() {
         local url new host org path rest repo project orgproj
         url=$(git remote get-url origin 2>/dev/null) || { echo "no origin remote"; return 1; }
@@ -380,6 +368,8 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/mise";
   home.file.".config/zsh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/zsh";
+  home.file."Library/Application Support/espanso".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/Library/Application Support/espanso";
   home.file.".local/bin/sanitize-paste".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.local/bin/sanitize-paste";
   home.file.".claude/settings.json".source =
@@ -405,9 +395,4 @@ in
   home.file.".config/opencode/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
 
-  # 1Password SSH agent lives in its sandboxed Group Container; expose it at a
-  # stable, machine-agnostic path so SSH_AUTH_SOCK in zsh init can point at it.
-  # The socket only exists while 1Password is running; a dangling symlink is fine.
-  home.file.".1password/agent.sock".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock";
 }

@@ -115,10 +115,6 @@ Prefix is `Ctrl+B`. From `home/.config/herdr/config.toml`:
 | `prefix + g`       | Goto                                                 |
 | `prefix + y`       | Copy mode (v/Space select, y/Enter copy, q/Esc exit) |
 
-## Secrets
-
-`home/.config/zsh/dev-local-secrets.zsh` exports `CONTEXT7_API_KEY` and `AZURE_DEVOPS_EXT_PAT` from 1Password at shell startup. If those env vars are empty, install the service-account token at `~/.config/op/service-account-dev-local.token` (not in git).
-
 ## Making changes
 
 Edit any file under `home/` - it's symlinked into place, so the change is live immediately. Run `./rebuild.sh` only when you change a package list, a system default, or anything in `home.nix` / `configuration.nix` / `flake.nix`.
