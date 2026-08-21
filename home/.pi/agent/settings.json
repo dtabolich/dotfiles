@@ -14,6 +14,15 @@
   "packages": [
     "npm:pi-web-access@0.14.0",
     "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.6",
-    "git:github.com/algal/pi-openai-server-compaction@c6d593087709e9481223dc6c6c2269b371b5e055"
-  ]
+    "git:github.com/algal/pi-openai-server-compaction@c6d593087709e9481223dc6c6c2269b371b5e055",
+    "npm:pi-lean-edit@0.3.2",
+    "npm:pi-lens@4.1.0",
+    "npm:cc-safety-net@2.0.10",
+    "npm:@juicesharp/rpiv-ask-user-question@2.6.4",
+    "npm:pi-hermes-memory@0.9.6"
+  ],
+  "lastChangelogVersion": "0.84.2",
+  "defaultProvider": "kimi-coding",
+  "defaultModel": "kimi-for-coding",
+  "defaultThinkingLevel": "medium"
 }

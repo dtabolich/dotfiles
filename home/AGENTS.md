@@ -1,5 +1,6 @@
 # global agent instructions
 
+- Agents must **never run `sudo` or any privilege-escalation command** on the user's local machine. If elevated access is needed, stop and ask the user explicitly.
 - Any VM access (including read-only) requires **fresh explicit approval** in the current user request: which VM and what action. Prior chat mentions are not standing auth. Approval for one VM/purpose never extends to another. Prefer local workspace. See `~/.cursor/rules/no-vm-code-changes.mdc`.
 - Git remotes, fetch, and push: SSH whenever possible. Do not add HTTPS remotes when SSH exists. See `~/.cursor/rules/prefer-git-ssh.mdc`.
 - Never use the em dash "—". Use plain dash "-" instead

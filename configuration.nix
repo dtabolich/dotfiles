@@ -48,6 +48,7 @@
     brews = [
       "herdr"
       "pi-coding-agent"
+      "kimi-code"
       "colima"
       "docker"
       "docker-buildx"

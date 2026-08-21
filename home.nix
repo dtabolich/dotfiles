@@ -32,29 +32,30 @@ in
     nerd-fonts.fira-code
     nerd-fonts.hack
     nerd-fonts.jetbrains-mono
-    nerd-fonts.caskaydia-cove         # Cascadia Code
+    nerd-fonts.caskaydia-cove # Cascadia Code
     nerd-fonts.geist-mono
     nerd-fonts.commit-mono
-    nerd-fonts.monaspace              # Neon/Argon/Xenon/Radon/Krypton
+    nerd-fonts.monaspace # Neon/Argon/Xenon/Radon/Krypton
     nerd-fonts.iosevka-term
-    nerd-fonts.blex-mono              # IBM Plex Mono
-    nerd-fonts.intone-mono            # Intel One Mono
+    nerd-fonts.blex-mono # IBM Plex Mono
+    nerd-fonts.intone-mono # Intel One Mono
     nerd-fonts.victor-mono
     nerd-fonts.zed-mono
     nerd-fonts.martian-mono
-    nerd-fonts.sauce-code-pro         # Source Code Pro
+    nerd-fonts.sauce-code-pro # Source Code Pro
 
     # build / languages (versions also via mise for node/python)
     cmake
     go
-    powershell  # brew cask currently breaks brew bundle API fetch
+    mono
+    powershell # brew cask currently breaks brew bundle API fetch
 
     # data
     libpq
     pgcli
-    duckdb                     # in-process OLAP; query CSV/Parquet/JSON/SQLite via SQL
-    usql                       # universal SQL CLI (postgres/mysql/sqlite/sqlserver/duckdb)
-    miller                     # jq for CSV/TSV/tabular data
+    duckdb # in-process OLAP; query CSV/Parquet/JSON/SQLite via SQL
+    usql # universal SQL CLI (postgres/mysql/sqlite/sqlserver/duckdb)
+    miller # jq for CSV/TSV/tabular data
 
     # cloud / k8s
     awscli2
@@ -75,62 +76,62 @@ in
     graphviz
 
     # LSP servers (declarative; nvim-lspconfig wires them up in lua/plugins/lsp.lua)
-    gopls                       # go
-    pyright                     # python
-    nil                         # nix - edits this very flake
-    lua-language-server         # nvim + wezterm config
-    marksman                    # markdown
-    typescript-language-server  # ts/js (needs node on PATH via mise)
-    taplo                       # toml LSP + formatter (mise/direnv/starship config)
-    yaml-language-server        # yaml LSP (k8s/CI configs)
+    gopls # go
+    pyright # python
+    nil # nix - edits this very flake
+    lua-language-server # nvim + wezterm config
+    marksman # markdown
+    typescript-language-server # ts/js (needs node on PATH via mise)
+    taplo # toml LSP + formatter (mise/direnv/starship config)
+    yaml-language-server # yaml LSP (k8s/CI configs)
 
     # formatters (consumed by conform.nvim)
     nixpkgs-fmt
     shfmt
     stylua
-    ruff                        # python format + lint, single binary
-    prettier                    # js/ts/json/yaml/md
+    ruff # python format + lint, single binary
+    prettier # js/ts/json/yaml/md
 
     # linters (consumed by nvim-lint)
     golangci-lint
     shellcheck
-    statix                      # nix linter
+    statix # nix linter
 
     # terminal-first dev productivity
     # shell history & navigation
-    atuin                       # shell history with context (sync disabled below)
-    ghq                         # clone/organize repos by host, jump with zoxide
-    zsh-fzf-tab                 # fzf-powered zsh tab completion
+    atuin # shell history with context (sync disabled below)
+    ghq # clone/organize repos by host, jump with zoxide
+    zsh-fzf-tab # fzf-powered zsh tab completion
     # listing & files
-    eza                         # ls replacement (exa successor) with icons/git
-    yazi                        # fast rust terminal file manager
-    glow                        # markdown viewer
+    eza # ls replacement (exa successor) with icons/git
+    yazi # fast rust terminal file manager
+    glow # markdown viewer
     # git
-    difftastic                  # syntax-aware diff (AST-aware)
-    git-absorb                  # automatic fixup commits for stacked branches
-    gh-dash                     # TUI dashboard for GitHub PRs/issues via gh
-    onefetch                    # repo summary on cd
-    actionlint                  # lint GitHub Actions workflows
+    difftastic # syntax-aware diff (AST-aware)
+    git-absorb # automatic fixup commits for stacked branches
+    gh-dash # TUI dashboard for GitHub PRs/issues via gh
+    onefetch # repo summary on cd
+    actionlint # lint GitHub Actions workflows
     # containers / k8s
-    k9s                         # kubernetes TUI
-    lazydocker                  # docker TUI, pairs with colima
-    stern                       # multi-pod log tailing
-    dive                        # explore docker image layers
+    k9s # kubernetes TUI
+    lazydocker # docker TUI, pairs with colima
+    stern # multi-pod log tailing
+    dive # explore docker image layers
     # data / config
-    yq-go                       # yaml processor (mikefarah/yq)
-    dasel                       # jq/yq/toml/csv/xml in one tool
-    visidata                    # spreadsheet TUI for csv/parquet/sql
+    yq-go # yaml processor (mikefarah/yq)
+    dasel # jq/yq/toml/csv/xml in one tool
+    visidata # spreadsheet TUI for csv/parquet/sql
     # dev tooling
-    just                        # modern make, plain-text command runner
-    hyperfine                   # statistical command benchmarking
-    tealdeer                    # fast tldr cheatsheets
-    sops                        # secrets management
-    age                         # modern encryption for sops
-    gitleaks                    # secret scanner; run as a pre-commit hook
+    just # modern make, plain-text command runner
+    hyperfine # statistical command benchmarking
+    tealdeer # fast tldr cheatsheets
+    sops # secrets management
+    age # modern encryption for sops
+    gitleaks # secret scanner; run as a pre-commit hook
     # system monitoring
-    bottom                      # rust htop replacement (btm)
-    dust                        # du replacement, intuitive disk usage
-    procs                       # ps replacement, colorful and filterable
+    bottom # rust htop replacement (btm)
+    dust # du replacement, intuitive disk usage
+    procs # ps replacement, colorful and filterable
   ];
 
   fonts.fontconfig.enable = true;
