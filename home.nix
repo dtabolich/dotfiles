@@ -63,6 +63,7 @@ in
     google-cloud-sdk
     cloudflared
     kubectl
+    kubevirt # virtctl CLI for KubeVirt VMs
     kubernetes-helm
     kustomize
     kubectx
