@@ -232,6 +232,18 @@ in
         export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
       fi
 
+      # yazi: cd into the last directory after quitting.
+      # Named `y` not `ya` - `ya` is yazi's plugin CLI (emit/exec/pub/sub).
+      if (( $+commands[yazi] )); then
+        y() {
+          local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+          yazi "$@" --cwd-file="$tmp"
+          if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+            cd -- "$cwd"
+          fi
+          rm -f -- "$tmp"
+        }
+      fi
       # Yandex Cloud CLI (optional local install)
       if [ -f "$HOME/yandex-cloud/path.bash.inc" ]; then
         . "$HOME/yandex-cloud/path.bash.inc"
