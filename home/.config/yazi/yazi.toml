@@ -1,0 +1,36 @@
+# yazi.toml - user config for yazi (file browser / code viewer).
+#
+# IMPORTANT: `[open].rules` REPLACES yazi's preset rules entirely (they are not
+# merged). This file therefore mirrors the v26.5.6 preset
+# (yazi-config/preset/yazi-default.toml) and adds code-extension coverage.
+# When upgrading yazi, diff against the new preset and update this list.
+#
+# Openers are inherited from the preset, notably:
+#   edit   = ${EDITOR:-vi} %s   (blocking)  -> nvim on this machine
+#   open   = system opener, extract, play, reveal
+
+[open]
+rules = [
+  # Folder
+  { url = "*/", use = [ "edit", "open", "reveal" ] },
+  # Text
+  { mime = "text/*", use = [ "edit", "reveal" ] },
+  # Image
+  { mime = "image/*", use = [ "open", "reveal" ] },
+  # Media
+  { mime = "{audio,video}/*", use = [ "play", "reveal" ] },
+  # Code
+  { mime = "application/{json,ndjson,javascript,wine-extension-ini}", use = [ "edit", "reveal" ] },
+  # Code by extension: catches files file(1) reports as application/* instead
+  # of text/* (xml, ruby, perl, lua, php, yaml, toml, nix, ...) so Enter opens
+  # them in nvim rather than the macOS system app.
+  { url = "*.{xml,yml,yaml,toml,nix,ini,conf,cfg,env,php,pl,rb,lua,tsx,jsx,jsonc,sql,graphql,proto,tex,c,h,hpp,cc,cpp,cs,swift,kt,java,scala}", use = [ "edit", "reveal" ] },
+  # Archive
+  { mime = "application/{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma,compress,archive,cpio,arj,xar,ms-cab*}", use = [ "extract", "reveal" ] },
+  # Empty file
+  { mime = "inode/empty", use = [ "edit", "reveal" ] },
+  # Virtual file system
+  { mime = "vfs/{absent,stale}", use = "download" },
+  # Fallback
+  { url = "*", use = [ "open", "reveal" ] },
+]
