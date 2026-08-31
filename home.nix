@@ -187,12 +187,7 @@ in
       init.defaultBranch = "main";
       pull.rebase = true;
       fetch.prune = true;
-      # Transparently route HTTPS git URLs through SSH for the common hosts.
-      # Azure DevOps is excluded because its SSH URL format rearranges the path
-      # (_git/ -> v3/); use `git2ssh` for that.
-      url."git@github.com:".insteadOf = "https://github.com/";
-      url."git@gitlab.com:".insteadOf = "https://gitlab.com/";
-      url."git@bitbucket.org:".insteadOf = "https://bitbucket.org/";
+      # HTTPS by default.
     };
   };
 
@@ -201,12 +196,11 @@ in
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
     enableCompletion = true;
-    # Login shells on macOS read .zprofile; keep brew/OrbStack but prefer Nix CLIs.
+    # Login shells on macOS read .zprofile; keep brew but prefer Nix CLIs.
     profileExtra = ''
       if [ -x /opt/homebrew/bin/brew ]; then
         eval "$(/opt/homebrew/bin/brew shellenv)"
       fi
-      [ -f "$HOME/.orbstack/shell/init.zsh" ] && . "$HOME/.orbstack/shell/init.zsh"
       export PATH="/etc/profiles/per-user/${user}/bin:/run/current-system/sw/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.opencode/bin:$PATH"
     '';
     initContent = ''
@@ -255,41 +249,6 @@ in
       # Krew (if plugins were installed previously)
       export PATH="''${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 
-      # git2ssh - rewrite the current repo's origin from HTTPS to SSH.
-      # Handles GitHub/GitLab/Bitbucket (simple host swap) and Azure DevOps
-      # (dev.azure.com and *.visualstudio.com -> ssh.dev.azure.com:v3, _git/ -> v3/).
-      # Azure is excluded from insteadOf because the path must be rearranged; run
-      # this once per Azure repo to switch its origin to SSH.
-      git2ssh() {
-        local url new host org path rest repo project orgproj
-        url=$(git remote get-url origin 2>/dev/null) || { echo "no origin remote"; return 1; }
-        case "$url" in
-          git@*|ssh://*) echo "already SSH: $url"; return 0 ;;
-          https://github.com/*)     new="git@github.com:''${url#https://github.com/}" ;;
-          https://gitlab.com/*)    new="git@gitlab.com:''${url#https://gitlab.com/}" ;;
-          https://bitbucket.org/*) new="git@bitbucket.org:''${url#https://bitbucket.org/}" ;;
-          https://*.visualstudio.com/*/_git/*)
-            # https://{org}.visualstudio.com[/DefaultCollection]/{project}/_git/{repo}
-            host=''${url#https://}; host=''${host%%/*}
-            org=''${host%.visualstudio.com}
-            path=''${url#https://$host/}
-            path=''${path#DefaultCollection/}
-            repo=''${path##*/_git/}
-            project=''${path%/_git/$repo}
-            new="git@ssh.dev.azure.com:v3/$org/$project/$repo" ;;
-          https://*dev.azure.com/*/_git/*)
-            # https://[user@]dev.azure.com/{org}/{project}/_git/{repo}
-            rest=''${url#https://}
-            rest=''${rest#*@}
-            rest=''${rest#dev.azure.com/}
-            repo=''${rest##*/_git/}
-            orgproj=''${rest%/_git/$repo}
-            new="git@ssh.dev.azure.com:v3/$orgproj/$repo" ;;
-          *) echo "unrecognized URL: $url"; return 1 ;;
-        esac
-        git remote set-url origin "$new" && echo "$url -> $new"
-      }
-
       # skills-link - symlink project .cursor/skills into .claude/skills.
       # Relative links so clones stay portable; re-run after adding Cursor skills.
       skills-link() {
@@ -326,6 +285,16 @@ in
       vim = "nvim";
       lg = "lazygit";
     };
+
+    # Pi is installed via Homebrew and runs under Homebrew's Node runtime.
+    # Ensure Homebrew's node/npm are first on PATH when pi spawns npm for
+    # package installs/rebuilds, so native modules compile against the ABI
+    # pi actually uses instead of a mise-managed Node version.
+    initExtra = ''
+      pi() {
+        PATH="/opt/homebrew/opt/node/bin:$PATH" command pi "$@"
+      }
+    '';
   };
 
   programs.starship = {
