@@ -1,0 +1,6 @@
+[theme]
+name = "calm"
+parent = "default"
+
+[colors]
+AlertError = "orange"
