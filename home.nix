@@ -287,6 +287,14 @@ in
         [ "$linked" -gt 0 ] || { echo "no skills under $src"; return 1; }
         echo "linked $linked skill(s)"
       }
+
+      # Pi is installed via Homebrew and runs under Homebrew's Node runtime.
+      # Ensure Homebrew's node/npm are first on PATH when pi spawns npm for
+      # package installs/rebuilds, so native modules compile against the ABI
+      # pi actually uses instead of a mise-managed Node version.
+      pi() {
+        PATH="/opt/homebrew/opt/node/bin:$PATH" command pi "$@"
+      }
     '';
     shellAliases = {
       ".." = "cd ..";
@@ -305,15 +313,6 @@ in
       lg = "lazygit";
     };
 
-    # Pi is installed via Homebrew and runs under Homebrew's Node runtime.
-    # Ensure Homebrew's node/npm are first on PATH when pi spawns npm for
-    # package installs/rebuilds, so native modules compile against the ABI
-    # pi actually uses instead of a mise-managed Node version.
-    initExtra = ''
-      pi() {
-        PATH="/opt/homebrew/opt/node/bin:$PATH" command pi "$@"
-      }
-    '';
   };
 
   programs.starship = {
