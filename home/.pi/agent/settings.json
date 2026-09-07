@@ -19,9 +19,10 @@
     "npm:pi-lens@4.1.0",
     "npm:cc-safety-net@2.0.10",
     "npm:@juicesharp/rpiv-ask-user-question@2.6.4",
-    "npm:pi-hermes-memory@0.9.6"
+    "npm:pi-hermes-memory@0.9.6",
+    "npm:@haphazarddev/pi-copy-code-block@0.2.3"
   ],
-  "lastChangelogVersion": "0.84.4",
+  "lastChangelogVersion": "0.85.0",
   "defaultProvider": "deepseek",
   "defaultModel": "deepseek-v4-flash",
   "defaultThinkingLevel": "high"
