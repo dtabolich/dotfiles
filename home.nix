@@ -391,6 +391,9 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/models.json";
   home.file.".pi/agent/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/settings.json";
+  # pi-hermes-memory extension config (caps + overflow strategy) - authored here.
+  home.file.".pi/agent/hermes-memory-config.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/hermes-memory-config.json";
 
   # One global agent policy in the repo; every consumer is a symlink to it.
   home.file."AGENTS.md".source =

@@ -1,0 +1,6 @@
+{
+  "memoryCharLimit": 8000,
+  "userCharLimit": 8000,
+  "projectCharLimit": 8000,
+  "memoryOverflowStrategy": "auto-consolidate"
+}
