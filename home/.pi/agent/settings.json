@@ -6,6 +6,7 @@
     "showImages": false
   },
   "hideThinkingBlock": false,
+  "showCacheMissNotices": true,
   "quietStartup": true,
   "theme": "rose-pine-moon",
   "steeringMode": "all",
@@ -25,5 +26,14 @@
   "lastChangelogVersion": "0.85.0",
   "defaultProvider": "deepseek",
   "defaultModel": "deepseek-v4-flash",
-  "defaultThinkingLevel": "high"
+  "defaultThinkingLevel": "high",
+  "enabledModels": [
+    "deepseek/*",
+    "zai/*",
+    "kimi-coding/*",
+    "cloudflare-ai-gateway/*"
+  ],
+  "compaction": {
+    "enabled": false
+  }
 }
