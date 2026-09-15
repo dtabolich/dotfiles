@@ -1,6 +1,6 @@
 # dotfiles
 
-Watch the walkthrough: https://youtu.be/5N-okeDdIuI
+Watch the walkthrough: <https://youtu.be/5N-okeDdIuI>
 
 My personal Mac setup, managed with nix-darwin and home-manager.
 One repo, one command, and a fresh Mac ends up configured the same way every time.
@@ -17,7 +17,8 @@ Running the switch builds:
 
 - System settings (dark mode, key repeat, dock, Finder, trackpad)
 - Nix user packages for everyday and cloud/k8s CLIs (ripgrep, fd, fzf, bat, gh, kubectl, helm, aws/azure/gcloud CLIs, and more)
-- mise for Node and Python versions (global defaults in `home/.config/mise/config.toml`; per-project overrides via `.mise.toml`)
+- Python from Nix (`python313` plus the mkdocs toolchain and `pipx`), so it never links a Homebrew library that `zap` can delete
+- mise for Node (global default in `home/.config/mise/config.toml`; per-project Node/Python overrides via `.mise.toml`)
 - Minimal Homebrew: Colima/Docker CLI stack, `herdr`, and GUI/darwin casks (WezTerm, .NET SDK, etc.)
 - PowerShell via Nix (`pwsh`); the Homebrew powershell cask currently breaks `brew bundle`
 - Shell (home-manager zsh, aliases, starship, direnv, zoxide) - not Oh My Zsh
@@ -108,7 +109,7 @@ programs.git = {
 ```
 
 **Homebrew cleanup warning:** `configuration.nix` sets `homebrew.onActivation.cleanup = "zap"`.
-Brew is intentionally minimal here - CLIs come from Nix, runtimes from mise.
+Brew is intentionally minimal here - CLIs and Python come from Nix, Node comes from mise.
 Every switch removes any Homebrew package or cask that isn't listed in `brews` / `casks`.
 Read those lists before the first `bootstrap.sh` or `rebuild.sh`, and add anything you still need via brew.
 
@@ -126,11 +127,20 @@ npm install -g wrangler @hubspot/cli azurite azure-functions-core-tools
 
 Legacy `~/.nvm` and `~/.oh-my-zsh` are gone; Node/tooling is mise, shell is home-manager.
 
-If Homebrew leaves a few root-owned kegs behind after zap (for example `certbot` or `python@3.12`), remove them once with:
+If Homebrew leaves a few root-owned kegs behind after zap (for example `certbot` or `python@3.12`),
+remove them once with:
 
 ```sh
 sudo rm -rf /opt/homebrew/Cellar/certbot /opt/homebrew/Cellar/python@3.12
 brew autoremove
+```
+
+`pip install` does the same outside the keg, where zap cannot see it: console scripts land as real files in `/opt/homebrew/bin` and packages in `/opt/homebrew/lib/python3.x`.
+Both keep hard references to the interpreter that just vanished, so the command fails with `bad interpreter` or a missing `libintl.8.dylib`.
+That is why no Python lives in Homebrew here. To find leftovers after a zap:
+
+```sh
+grep -l '^#!/opt/homebrew/opt/python' /opt/homebrew/bin/*
 ```
 
 **Heads-up:**

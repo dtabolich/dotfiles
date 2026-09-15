@@ -1,8 +1,11 @@
 [tools]
+# Python is Nix-owned (see home.nix python313.withPackages). Add a python entry
+# here only when a project needs a version other than the system interpreter.
 node = "24"
-python = "3.13"
 
 [settings]
 experimental = true
-# Prefer prebuilt CPython; compiling against Homebrew libs is brittle after zap.
+# Applies to per-project Python pins: always take the self-contained prebuilt
+# CPython instead of compiling, which links Homebrew libs that
+# `onActivation.cleanup = "zap"` later deletes.
 python.compile = false

@@ -44,11 +44,31 @@ in
     nerd-fonts.martian-mono
     nerd-fonts.sauce-code-pro # Source Code Pro
 
-    # build / languages (versions also via mise for node/python)
+    # build / languages (node version via mise; Python is Nix-owned, below)
     cmake
     go
     mono
     powershell # brew cask currently breaks brew bundle API fetch
+
+    # Python: Nix owns the system-wide interpreter. A host-compiled Python
+    # (pyenv/python-build) links Homebrew libraries that `onActivation.cleanup
+    # = "zap"` deletes, which is how the old mise-managed Python died with
+    # "Library not loaded: /opt/homebrew/opt/gettext/lib/libintl.8.dylib".
+    # mise still pins per-project versions via .mise.toml; for extra PyPI
+    # packages, use a venv (`python3 -m venv .venv`) - the store is read-only.
+    (python313.withPackages (ps: with ps; [
+      pip # so `python3 -m venv` bootstraps cleanly
+      mkdocs
+      mkdocs-material
+      mkdocs-minify-plugin
+      mkdocstrings
+      mike # versioned docs deployment
+    ]))
+    # Isolated venvs for CLI apps that aren't in nixpkgs (headroom-ai et al.).
+    # doCheck = false: pipx 1.8.0's own suite asserts pre-PEP-508 spacing
+    # ("name@ url") and fails against the newer `packaging` in this nixpkgs
+    # revision. Tests only - the tool is unaffected.
+    (pipx.overridePythonAttrs (old: { doCheck = false; }))
 
     # data
     libpq

@@ -88,9 +88,11 @@ LSP servers (`gopls`, `pyright`, `nil_ls`, `lua_ls`, `marksman`, `ts_ls`), forma
 - `tldr <cmd>` - fast cheatsheet (e.g. `tldr tar`).
 - `just` - run `justfile` recipes (modern `make`).
 
-## Runtimes (mise)
+## Runtimes (mise + Nix)
 
-`mise` owns Node and Python versions. Globals live in `home/.config/mise/config.toml` (Node 22, Python 3.13). Per-project overrides go in a `.mise.toml` at the project root:
+`mise` owns the Node version. The global default lives in `home/.config/mise/config.toml` (Node 24).
+Python is Nix-owned (`python313` with the mkdocs toolchain and `pipx`) so it never links a Homebrew library that `zap` deletes.
+Per-project overrides still go in a `.mise.toml` at the project root, Python included, when a project needs a version other than the system one:
 
 ```toml
 [tools]
@@ -99,6 +101,8 @@ python = "3.12"
 ```
 
 `mise install` installs what the current directory asks for; `mise x node -- node -v` runs a one-off.
+`python.compile = false` forces the self-contained prebuilt CPython for those pins, so they never compile against Homebrew either.
+Need a PyPI package beyond the system set? Use a venv (`python3 -m venv .venv`) - the Nix store is read-only.
 
 ## Multiplexer (herdr)
 
