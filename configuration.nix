@@ -26,7 +26,14 @@
       _HIHideMenuBar = false;
       AppleShowAllExtensions = true;
     };
-    dock.autohide = true;
+    dock = {
+      autohide = true;
+      # macOS 27's Dock reveal races the cursor: with the stock delay/animation the
+      # Dock can slide back down under a cursor that has already reached it, so the
+      # icons can't be clicked. Reveal immediately and animate ~4x faster.
+      autohide-delay = 0.0;
+      autohide-time-modifier = 0.25;
+    };
     finder.FXPreferredViewStyle = "Nlsv";  # list view by default
     finder.CreateDesktop = false;          # clean desktop
     trackpad.Clicking = true;              # tap to click

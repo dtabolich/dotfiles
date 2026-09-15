@@ -161,14 +161,33 @@ config.keys = {
 	},
 }
 
+-- Enter native fullscreen synchronously. The previous version deferred the toggle
+-- with wezterm.time.call_after(0.3, ...), but call_after does not fire when it is
+-- scheduled from an event callback in this build
+-- (https://github.com/wez/wezterm/issues/3026), so the toggle never ran and the
+-- window stayed at its default 80x24 size. Toggling inline works: verified that
+-- get_dimensions().is_full_screen flips false -> true during gui-startup, so no
+-- deferral is needed.
 wezterm.on("gui-startup", function(cmd)
 	local _, pane, window = wezterm.mux.spawn_window(spawn_command_for(cmd))
 	local gui_win = window:gui_window()
-	-- Defer so the window exists before macOS native fullscreen assigns a Space.
-	-- ToggleFullScreen action (not :toggle_fullscreen()) honors native mode.
-	wezterm.time.call_after(0.3, function()
+	-- ToggleFullScreen action (not :toggle_fullscreen()) honors
+	-- native_macos_fullscreen_mode.
+	local ok, err = pcall(function()
 		gui_win:perform_action(wezterm.action.ToggleFullScreen, pane)
 	end)
+	if not ok then
+		wezterm.log_error("wezterm: could not enter native fullscreen: " .. tostring(err))
+		return
+	end
+
+	-- Surface a silent failure rather than leaving a small window unexplained.
+	local read_ok, dims = pcall(function()
+		return gui_win:get_dimensions()
+	end)
+	if read_ok and dims and not dims.is_full_screen then
+		wezterm.log_error("wezterm: ToggleFullScreen did not take; window left as-is")
+	end
 end)
 
 -- Pretty path for Mission Control / Spaces labels (and the (hidden) title bar).
