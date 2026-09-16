@@ -13,15 +13,12 @@ config.window_background_opacity = 0.8
 config.macos_window_background_blur = 50
 config.hide_tab_bar_if_only_one_tab = true
 config.window_decorations = "RESIZE"
--- Borderless full screen, NOT macOS native full screen. Native full screen puts the
--- window in its own Space, and macOS force-hides the Dock in a fullscreen Space: the
--- Dock's own log showed every one of the 44 hide decisions as
--- "Space Forces Hidden: 1 ... appName=WezTerm", which is what made the Dock
--- unclickable. A borderless window fills the display without creating a Space, so the
--- Dock stays usable. It also covers the notch band native mode reserves
--- (3024x1964 vs 3024x1898 px), and macos_fullscreen_extend_behind_notch requires it.
-config.native_macos_fullscreen_mode = false
-config.macos_fullscreen_extend_behind_notch = true
+-- Full screen stays available on demand (Alt+Enter), but native_macos_fullscreen_mode
+-- puts that in its own Space, and macOS hides the Dock in a fullscreen Space. The Dock
+-- is the point of this setup, so do NOT fullscreen the window at startup. Note the
+-- alternative is no better: borderless full screen asks macOS for suppressed UI mode,
+-- which hides the Dock just the same ("In Suppressed UI Mode: 1" in the Dock log).
+config.native_macos_fullscreen_mode = true
 
 -- New windows / unresolved panes start here. Explicit --cwd and OSC-7
 -- pane cwd still win when present (see default_cwd docs).
@@ -166,32 +163,22 @@ config.keys = {
 	},
 }
 
--- Enter native fullscreen synchronously. The previous version deferred the toggle
--- with wezterm.time.call_after(0.3, ...), but call_after does not fire when it is
--- scheduled from an event callback in this build
--- (https://github.com/wez/wezterm/issues/3026), so the toggle never ran and the
--- window stayed at its default 80x24 size. Toggling inline works: verified that
--- get_dimensions().is_full_screen flips false -> true during gui-startup, so no
--- deferral is needed.
+-- Fill the screen's work area at startup - macOS zoom, via window:maximize() - so the
+-- window covers everything except the menu bar and the Dock, and the Dock stays
+-- visible and clickable while WezTerm is focused.
+--
+-- Called synchronously, not through wezterm.time.call_after: call_after does not fire
+-- when scheduled from an event callback in this build
+-- (https://github.com/wez/wezterm/issues/3026), which is why the old deferred
+-- ToggleFullScreen here silently never ran.
 wezterm.on("gui-startup", function(cmd)
-	local _, pane, window = wezterm.mux.spawn_window(spawn_command_for(cmd))
+	local _, _, window = wezterm.mux.spawn_window(spawn_command_for(cmd))
 	local gui_win = window:gui_window()
-	-- ToggleFullScreen action (not :toggle_fullscreen()) honors
-	-- native_macos_fullscreen_mode.
 	local ok, err = pcall(function()
-		gui_win:perform_action(wezterm.action.ToggleFullScreen, pane)
+		gui_win:maximize()
 	end)
 	if not ok then
-		wezterm.log_error("wezterm: could not enter native fullscreen: " .. tostring(err))
-		return
-	end
-
-	-- Surface a silent failure rather than leaving a small window unexplained.
-	local read_ok, dims = pcall(function()
-		return gui_win:get_dimensions()
-	end)
-	if read_ok and dims and not dims.is_full_screen then
-		wezterm.log_error("wezterm: ToggleFullScreen did not take; window left as-is")
+		wezterm.log_error("wezterm: could not maximize the window: " .. tostring(err))
 	end
 end)
 

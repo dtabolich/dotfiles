@@ -26,14 +26,12 @@
       _HIHideMenuBar = false;
       AppleShowAllExtensions = true;
     };
-    dock = {
-      autohide = true;
-      # macOS 27's Dock reveal races the cursor: with the stock delay/animation the
-      # Dock can slide back down under a cursor that has already reached it, so the
-      # icons can't be clicked. Reveal immediately and animate ~4x faster.
-      autohide-delay = 0.0;
-      autohide-time-modifier = 0.25;
-    };
+    # Dock always visible, so its icons are always clickable. Autohide is the part that
+    # kept failing on macOS 27: the Dock's own log showed it revealing seconds late and
+    # then hiding with the cursor stationary, so a click aimed at it landed on nothing.
+    # An always-visible Dock removes that reveal path entirely. Fullscreen apps still
+    # hide the Dock while focused - that is macOS behaviour, not this setting.
+    dock.autohide = false;
     finder.FXPreferredViewStyle = "Nlsv";  # list view by default
     finder.CreateDesktop = false;          # clean desktop
     trackpad.Clicking = true;              # tap to click
