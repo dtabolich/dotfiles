@@ -161,7 +161,11 @@ in
     VISUAL = "nvim";
     BAT_THEME = "TwoDark";
   };
+  # Determinate's `nix` lives here. nix-darwin replaces /etc/zshrc and never
+  # sources /etc/profile.d/nix.sh, so without this entry `nix` is missing and
+  # rebuild.sh dies at `command -v nix`.
   home.sessionPath = [
+    "/nix/var/nix/profiles/default/bin"
     "$HOME/.local/bin"
     "$HOME/go/bin"
     "$HOME/.opencode/bin"
@@ -237,10 +241,13 @@ in
     enableCompletion = true;
     # Login shells on macOS read .zprofile; keep brew but prefer Nix CLIs.
     profileExtra = ''
+      if [ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+      fi
       if [ -x /opt/homebrew/bin/brew ]; then
         eval "$(/opt/homebrew/bin/brew shellenv)"
       fi
-      export PATH="/etc/profiles/per-user/${user}/bin:/run/current-system/sw/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.opencode/bin:$PATH"
+      export PATH="/nix/var/nix/profiles/default/bin:/etc/profiles/per-user/${user}/bin:/run/current-system/sw/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.opencode/bin:$PATH"
     '';
     initContent = ''
       bindkey '^f' autosuggest-accept
