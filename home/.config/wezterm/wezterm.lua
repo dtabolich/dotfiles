@@ -13,10 +13,15 @@ config.window_background_opacity = 0.8
 config.macos_window_background_blur = 50
 config.hide_tab_bar_if_only_one_tab = true
 config.window_decorations = "RESIZE"
--- Native fullscreen: WezTerm gets its own macOS Space with menu bar + dock
--- hidden. Other desktops keep the normal menu bar/dock. Non-native mode
--- (false) only maximizes in place and leaves you on the current Space.
-config.native_macos_fullscreen_mode = true
+-- Borderless full screen, NOT macOS native full screen. Native full screen puts the
+-- window in its own Space, and macOS force-hides the Dock in a fullscreen Space: the
+-- Dock's own log showed every one of the 44 hide decisions as
+-- "Space Forces Hidden: 1 ... appName=WezTerm", which is what made the Dock
+-- unclickable. A borderless window fills the display without creating a Space, so the
+-- Dock stays usable. It also covers the notch band native mode reserves
+-- (3024x1964 vs 3024x1898 px), and macos_fullscreen_extend_behind_notch requires it.
+config.native_macos_fullscreen_mode = false
+config.macos_fullscreen_extend_behind_notch = true
 
 -- New windows / unresolved panes start here. Explicit --cwd and OSC-7
 -- pane cwd still win when present (see default_cwd docs).
