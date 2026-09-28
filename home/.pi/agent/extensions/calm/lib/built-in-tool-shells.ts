@@ -82,6 +82,10 @@ export function installCalmBuiltInToolShellLayout(): void {
     const definition = originalGetToolDefinition.call(this, name);
     const source = this.getAllTools().find((tool) => tool.name === name)?.sourceInfo.source;
     if (definition) {
+      // SAFETY: `this` is a live AgentSession, so Pi's private `_baseToolsOverride`
+      // field is present whenever this override runs. The `?? {}` fallback treats a
+      // missing field as "no SDK base override", so a renamed field degrades to
+      // Pi's own definition instead of misclassifying the tool as a built-in.
       const session = this as unknown as AgentSessionPresentationState;
       const isSdkBaseOverride = Object.hasOwn(session._baseToolsOverride ?? {}, name);
       if (source === "builtin" && !isSdkBaseOverride) {
@@ -94,6 +98,12 @@ export function installCalmBuiltInToolShellLayout(): void {
   };
 
   ToolExecutionComponent.prototype.render = function (width: number): string[] {
+    // SAFETY: Pi calls render only on a ToolExecutionComponent it constructed, so
+    // the private toolName, toolDefinition, imageComponents, and imageSpacers
+    // fields read below exist at runtime even though the public type hides them.
+    // If a future Pi renames them, toolName reads as undefined, the
+    // CALM_BUILT_IN_TOOL_NAMES check fails, and control falls through to
+    // originalRender before either image array is dereferenced.
     const state = this as unknown as ToolRowPresentationState;
     const isKnownBuiltIn =
       CALM_BUILT_IN_TOOL_NAMES.has(state.toolName) &&

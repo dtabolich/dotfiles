@@ -62,6 +62,12 @@ export function installCalmCollapsedThinkingLayout(): void {
   AssistantMessageComponent.prototype.updateContent = function (
     message: AssistantMessage,
   ): void {
+    // SAFETY: Pi calls updateContent only on an AssistantMessageComponent it
+    // constructed, so the private hiddenThinkingLabel, hideThinkingBlock, and
+    // lastMessage fields read below exist at runtime. A renamed hiddenThinkingLabel
+    // reads as undefined, so `=== ""` is false, hideThinking stays false, and Pi's
+    // stock updateContent path runs unchanged; the lastMessage write below is
+    // reachable only when that label field was present.
     const state = this as unknown as AssistantMessagePresentationState;
     const hideThinking =
       state.hiddenThinkingLabel === "" &&
