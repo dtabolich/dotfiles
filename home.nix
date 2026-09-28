@@ -414,6 +414,15 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/Library/Application Support/espanso";
   home.file.".local/bin/sanitize-paste".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.local/bin/sanitize-paste";
+  # pi-memory-doctor: health check for pi-hermes-memory stores (sizes vs limits,
+  # file-vs-index drift, phantom index rows). Run it before/after memory edits.
+  home.file.".local/bin/pi-memory-doctor".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.local/bin/pi-memory-doctor";
+  # pi-extension-patches: re-applies local in-place patches to installed pi extension
+  # packages (pi cannot rebind a third-party shortcut) and verifies shortcut ownership.
+  # Run it after changing any pinned package version in settings.json.
+  home.file.".local/bin/pi-extension-patches".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.local/bin/pi-extension-patches";
   home.file.".claude/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
 

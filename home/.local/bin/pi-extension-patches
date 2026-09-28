@@ -1,0 +1,301 @@
+#!/usr/bin/env node
+/**
+ * pi-extension-patches - keep local patches to installed pi extension packages applied.
+ *
+ * Why this exists: pi extensions live in their own unmanaged <agent>/npm package trees, so
+ * any in-place edit disappears the next time that package is updated or reinstalled. Two
+ * local patches are tracked here:
+ *
+ *   1. pi-background-tasks registers Ctrl+Alt+C for a documented "/bg-clear fallback", the
+ *      same key @haphazarddev/pi-copy-code-block registers to copy the latest code block.
+ *      pi has no supported way to rebind an extension shortcut, so it printed
+ *      "Extension shortcut conflict: 'ctrl+alt+c' registered by both ..." at startup and
+ *      silently kept whichever extension loaded last. The losing binding is moved to
+ *      Ctrl+Alt+N here.
+ *   2. pi-powerline-footer hardcodes a per-character rainbow for think:high|xhigh|max with
+ *      no config option, theme key, env var, or status key that avoids it. The patch makes
+ *      that segment follow the active theme.
+ *
+ * Re-run this script after changing any pinned package version in
+ * home/.pi/agent/settings.json. It is idempotent: already-patched files are left alone.
+ *
+ * Checks performed:
+ *   1. Re-applies missing patches and reports DRIFT when a package changed shape so the
+ *      patch no longer matches.
+ *   2. Confirms each shortcut is still registered by its intended owner.
+ *   3. Flags a pi-powerline-footer binding that shares a key with an extension shortcut.
+ *      Powerline intercepts keys inside the editor and returns early, so it wins over
+ *      pi.registerShortcut without pi ever reporting a conflict - and with an empty editor
+ *      the press is swallowed and does nothing at all.
+ *
+ * Blind spots: only the files listed below are read, and only extension shortcuts are
+ * considered - pi's built-in keybindings (~/.pi/agent/keybindings.json) are not checked.
+ *
+ * Exit status: 0 clean, 1 needs attention, 2 usage error.
+ */
+"use strict";
+
+const fs = require("fs");
+const path = require("path");
+
+const home = process.env.HOME || process.env.USERPROFILE || "";
+const configuredAgentDir = (process.env.PI_CODING_AGENT_DIR || "").trim();
+const agentDir = configuredAgentDir
+  ? configuredAgentDir.replace(/^~(?=\/|$)/, home)
+  : path.join(home, ".pi", "agent");
+const modulesDir = path.join(agentDir, "npm", "node_modules");
+const settingsFile = path.join(agentDir, "settings.json");
+
+/**
+ * In-place patches, each an exact `from` -> `to` text replacement in an installed package.
+ * A replacement whose `to` text is present exactly once is already applied; one whose `from`
+ * text is present exactly once is applied; anything else is DRIFT and needs a human.
+ */
+const PATCHES = [
+  {
+    pkg: "pi-background-tasks",
+    file: "dist/src/extension.js",
+    why: "frees Ctrl+Alt+C for pi-copy-code-block (pi cannot rebind an extension shortcut)",
+    replacements: [
+      {
+        label: "clear-notices shortcut ctrl+alt+c -> ctrl+alt+n",
+        from: "pi.registerShortcut('ctrl+alt+c', {",
+        to: "pi.registerShortcut('ctrl+alt+n', {",
+      },
+    ],
+  },
+  {
+    pkg: "pi-powerline-footer",
+    file: "segments.ts",
+    why: "upstream rainbow for think:high|xhigh|max has no knob; follow the active theme instead",
+    replacements: [
+      {
+        label: "drop now-unused rainbow import",
+        from: 'import { fg, rainbow, applyColor } from "./theme.ts";',
+        to: 'import { fg, applyColor } from "./theme.ts";',
+      },
+      {
+        label: "theme-aware think:high|xhigh|max colors",
+        from: [
+          '    if (level === "high" || level === "xhigh" || level === "max") {',
+          '      return { content: rainbow(content), visible: true };',
+          "    }",
+        ].join("\n"),
+        to: [
+          "    // Local patch: solid theme-aware colors instead of the hardcoded rainbow gradient",
+          "    // for high/xhigh/max. Uses the pi theme tokens thinkingHigh/thinkingXhigh/thinkingMax,",
+          "    // which every theme defines (e.g. rose-pine-moon maps them to rose/love/gold).",
+          "    // Upstream applies RAINBOW_COLORS per character here; see AGENTS.md note.",
+          '    if (level === "high") {',
+          '      return { content: applyColor(ctx.theme, "thinkingHigh", content), visible: true };',
+          "    }",
+          '    if (level === "xhigh") {',
+          '      return { content: applyColor(ctx.theme, "thinkingXhigh", content), visible: true };',
+          "    }",
+          '    if (level === "max") {',
+          '      return { content: applyColor(ctx.theme, "thinkingMax", content), visible: true };',
+          "    }",
+        ].join("\n"),
+      },
+    ],
+  },
+];
+
+/** Which package must register which shortcut, and the source text proving it. */
+const SHORTCUTS = [
+  {
+    key: "ctrl+alt+c",
+    pkg: "@haphazarddev/pi-copy-code-block",
+    file: "dist/index.js",
+    expect: 'shortcut: Key.ctrlAlt("c")',
+  },
+  {
+    key: "ctrl+alt+n",
+    pkg: "pi-background-tasks",
+    file: "dist/src/extension.js",
+    expect: "pi.registerShortcut('ctrl+alt+n', {",
+  },
+];
+
+/** pi-powerline-footer defaults for the keys it intercepts itself (see header). */
+const POWERLINE_PACKAGE = "pi-powerline-footer";
+const POWERLINE_DEFAULTS = {
+  stashHistory: "ctrl+alt+h",
+  copyEditor: "ctrl+alt+c",
+  cutEditor: "ctrl+alt+x",
+  queueOpen: "ctrl+alt+q",
+  reply: null,
+  editorStart: "super+shift+up",
+  editorEnd: "super+shift+down",
+};
+
+const problems = [];
+const argv = process.argv.slice(2);
+const checkOnly = argv.includes("--check");
+const unknownFlags = argv.filter((arg) => arg !== "--check" && arg !== "-h" && arg !== "--help");
+
+if (unknownFlags.length > 0) {
+  console.error(`pi-extension-patches: unknown argument(s): ${unknownFlags.join(" ")}`);
+  console.error("usage: pi-extension-patches [--check]");
+  process.exit(2);
+}
+if (argv.includes("-h") || argv.includes("--help")) {
+  console.log("usage: pi-extension-patches [--check]");
+  console.log("");
+  console.log("  --check  report status without writing to package files");
+  process.exit(0);
+}
+
+function readText(file) {
+  try {
+    return fs.readFileSync(file, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+function countOccurrences(haystack, needle) {
+  let count = 0;
+  let index = haystack.indexOf(needle);
+  while (index !== -1) {
+    count += 1;
+    index = haystack.indexOf(needle, index + needle.length);
+  }
+  return count;
+}
+
+console.log("pi-extension-patches");
+console.log(`agent dir: ${agentDir}`);
+console.log(`mode: ${checkOnly ? "check only" : "apply"}`);
+
+function applyPatches() {
+  console.log("");
+  console.log("patches");
+
+  for (const patch of PATCHES) {
+    const file = path.join(modulesDir, patch.pkg, patch.file);
+    const label = `${patch.pkg}/${patch.file}`;
+    let text = readText(file);
+
+    if (text === null) {
+      console.log(`  skip      ${label} (not installed)`);
+      continue;
+    }
+
+    let changed = false;
+    for (const replacement of patch.replacements) {
+      if (countOccurrences(text, replacement.to) === 1 && countOccurrences(text, replacement.from) === 0) {
+        console.log(`  ok        ${label} - ${replacement.label}`);
+        continue;
+      }
+      if (countOccurrences(text, replacement.from) === 1 && countOccurrences(text, replacement.to) === 0) {
+        if (checkOnly) {
+          console.log(`  missing   ${label} - ${replacement.label} (re-run without --check)`);
+          problems.push(`${patch.pkg}: ${replacement.label} not applied`);
+          continue;
+        }
+        text = text.replace(replacement.from, replacement.to);
+        changed = true;
+        console.log(`  patched   ${label} - ${replacement.label}`);
+        continue;
+      }
+      console.log(`  DRIFT     ${label} - ${replacement.label} (patch text does not match)`);
+      problems.push(`${patch.pkg}: ${replacement.label} drifted; review the table in this script`);
+    }
+
+    if (changed) fs.writeFileSync(file, text);
+  }
+}
+
+function checkShortcutOwnership() {
+  console.log("");
+  console.log("shortcut ownership");
+
+  const owners = new Map();
+  for (const entry of SHORTCUTS) {
+    const file = path.join(modulesDir, entry.pkg, entry.file);
+    const label = `${entry.key.padEnd(12)} <- ${entry.pkg}`;
+
+    if (owners.has(entry.key)) {
+      console.log(`  PROBLEM   ${entry.key} is claimed twice in this script (${owners.get(entry.key)} and ${entry.pkg})`);
+      problems.push(`${entry.key} is claimed twice in the shortcut table`);
+    }
+    owners.set(entry.key, entry.pkg);
+
+    const text = readText(file);
+    if (text === null) {
+      console.log(`  skip      ${label} (not installed)`);
+      continue;
+    }
+    if (countOccurrences(text, entry.expect) === 1) {
+      console.log(`  ok        ${label}`);
+      continue;
+    }
+    console.log(`  PROBLEM   ${label} (expected registration not found)`);
+    problems.push(`${entry.pkg} no longer registers ${entry.key}`);
+  }
+}
+
+function checkPowerlineBindings() {
+  console.log("");
+  console.log("pi-powerline-footer bindings");
+
+  if (!fs.existsSync(path.join(modulesDir, POWERLINE_PACKAGE))) {
+    console.log(`  skip      ${POWERLINE_PACKAGE} (not installed)`);
+    return;
+  }
+
+  const settingsText = readText(settingsFile);
+  if (settingsText === null) {
+    console.log(`  skip      (no ${settingsFile})`);
+    return;
+  }
+
+  let settings;
+  try {
+    settings = JSON.parse(settingsText);
+  } catch (error) {
+    console.log(`  PROBLEM   ${settingsFile} is not valid JSON: ${error.message}`);
+    problems.push(`${settingsFile} is not valid JSON`);
+    return;
+  }
+
+  const overrides = settings.powerlineShortcuts && typeof settings.powerlineShortcuts === "object"
+    ? settings.powerlineShortcuts
+    : {};
+  const registered = new Map(SHORTCUTS.map((entry) => [entry.key.toLowerCase(), entry]));
+
+  for (const [name, fallback] of Object.entries(POWERLINE_DEFAULTS)) {
+    const hasOverride = Object.prototype.hasOwnProperty.call(overrides, name);
+    const value = hasOverride ? overrides[name] : fallback;
+    const configured = typeof value === "string" && value.trim() ? value.trim().toLowerCase() : null;
+    const source = hasOverride ? "settings" : "default";
+
+    if (configured === null) {
+      console.log(`  ok        ${name.padEnd(12)} disabled`);
+      continue;
+    }
+
+    const clash = registered.get(configured);
+    if (clash) {
+      console.log(`  SHADOWS   ${name.padEnd(12)} ${configured} (${source}) also registered by ${clash.pkg}`);
+      problems.push(`powerline ${name}=${configured} shadows ${clash.pkg}; move it in powerlineShortcuts`);
+      continue;
+    }
+    console.log(`  ok        ${name.padEnd(12)} ${configured} (${source})`);
+  }
+}
+
+applyPatches();
+checkShortcutOwnership();
+checkPowerlineBindings();
+
+console.log("");
+if (problems.length === 0) {
+  console.log("clean: patches applied, shortcut ownership verified");
+  process.exit(0);
+}
+
+console.log("needs attention:");
+for (const problem of problems) console.log(`  - ${problem}`);
+process.exit(1);

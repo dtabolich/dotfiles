@@ -1,0 +1,235 @@
+#!/usr/bin/env node
+/**
+ * pi-memory-doctor - health check for pi-hermes-memory stores.
+ *
+ * Reports, for every memory store:
+ *   1. size vs its effective character limit, and whether that limit is actually
+ *      ENFORCED. With memoryMode "policy-only" (the default) caps are advisory:
+ *      nothing is rejected and auto-consolidation can never fire, so a store
+ *      over its limit is harmless, not an error.
+ *   2. file-vs-index drift. The markdown is the source of truth, but
+ *      memory_search reads a SQLite mirror (sessions.db) that only syncs when a
+ *      memory tool mutation fires the store's mutation observer. Entries written
+ *      by the background review loop can therefore be missing from search.
+ *   3. phantom index rows - index content absent from the markdown. These are the
+ *      dangerous ones: search returns text a later memory_replace cannot match,
+ *      producing "No entry matched".
+ *
+ * With --dupes it also lists near-duplicate entry clusters (token coverage
+ * >= 0.85) with the tokens unique to the redundant copy, so you can judge
+ * whether dropping it is safe (residual <= 3 is usually safe).
+ *
+ * Exit status: 0 clean, 1 problems found, 2 usage error.
+ *
+ * Repair for drift/phantoms: run /memory-sync-markdown in an INTERACTIVE pi
+ * session. `pi -p "/memory-sync-markdown"` does NOT work - print mode only
+ * expands prompt templates and never dispatches registered commands.
+ */
+"use strict";
+
+const fs = require("fs");
+const path = require("path");
+
+const HOME = process.env.HOME || "";
+const AGENT_DIR = path.join(HOME, ".pi", "agent");
+const HERMES_DIR = path.join(AGENT_DIR, "pi-hermes-memory");
+const PROJECTS_DIR = path.join(AGENT_DIR, "projects-memory");
+const CONFIG_FILE = path.join(AGENT_DIR, "hermes-memory-config.json");
+const DB_FILE = path.join(HERMES_DIR, "sessions.db");
+
+const argv = process.argv.slice(2);
+const SHOW_DUPES = argv.includes("--dupes");
+const AS_JSON = argv.includes("--json");
+const QUIET = argv.includes("--quiet");
+
+const DEFAULTS = { memoryCharLimit: 5000, userCharLimit: 5000, projectCharLimit: 5000 };
+const SEP = "\n§\n";
+
+function readConfig() {
+  const cfg = { ...DEFAULTS, memoryMode: "policy-only" };
+  try {
+    Object.assign(cfg, JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8")));
+  } catch {
+    /* defaults */
+  }
+  return cfg;
+}
+
+function readEntries(file) {
+  if (!fs.existsSync(file)) return null;
+  const raw = fs.readFileSync(file, "utf8");
+  if (!raw.trim()) return [];
+  return raw.split(SEP).map((e) => e.trim()).filter(Boolean);
+}
+
+function norm(s) {
+  return String(s).replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function loadIndex() {
+  try {
+    const Database = require(path.join(AGENT_DIR, "npm", "node_modules", "better-sqlite3"));
+    if (!fs.existsSync(DB_FILE)) return { rows: [], error: "sessions.db not found" };
+    const db = new Database(DB_FILE, { readonly: true });
+    const rows = db
+      .prepare("SELECT id, COALESCE(project, '') AS project, target, content FROM memories")
+      .all();
+    db.close();
+    return { rows, error: null };
+  } catch (err) {
+    return { rows: [], error: `index unavailable (${err.message})` };
+  }
+}
+
+function buildStores() {
+  const stores = [
+    { label: "global:memory", file: path.join(HERMES_DIR, "MEMORY.md"), target: "memory", project: "", limitKey: "memoryCharLimit" },
+    { label: "global:user", file: path.join(HERMES_DIR, "USER.md"), target: "user", project: "", limitKey: "userCharLimit" },
+    { label: "global:failure", file: path.join(HERMES_DIR, "failures.md"), target: "failure", project: "", limitKey: null, limitNote: "2 x memoryCharLimit" },
+  ];
+  if (fs.existsSync(PROJECTS_DIR)) {
+    for (const name of fs.readdirSync(PROJECTS_DIR).sort()) {
+      const file = path.join(PROJECTS_DIR, name, "MEMORY.md");
+      if (fs.existsSync(file)) {
+        stores.push({ label: `project:${name}`, file, target: "memory", project: name, limitKey: "projectCharLimit" });
+      }
+    }
+  }
+  return stores;
+}
+
+function limitFor(store, cfg) {
+  if (store.target === "failure") return cfg.memoryCharLimit * 2;
+  return cfg[store.limitKey] ?? 5000;
+}
+
+function analyse(store, cfg, rows) {
+  const entries = readEntries(store.file) || [];
+  const chars = entries.length ? entries.join(SEP).length : 0;
+  const limit = limitFor(store, cfg);
+
+  // Index rows belonging to this exact scope.
+  const scoped = rows.filter((r) => r.target === store.target && (r.project || "") === store.project);
+  const scopedNorm = scoped.map((r) => norm(r.content));
+
+  const entryNorm = entries.map(norm);
+  const unindexed = entries.filter((e, i) => !scopedNorm.some((s) => s.includes(entryNorm[i]) || entryNorm[i].includes(s)));
+  const phantom = scoped.filter((r) => !entryNorm.some((e) => e.includes(norm(r.content)) || norm(r.content).includes(e)));
+
+  return { ...store, entries, chars, limit, usage: limit ? chars / limit : 0, unindexed, phantom, indexed: scoped.length };
+}
+
+function tokenSet(s) {
+  return new Set(norm(s).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3));
+}
+
+function dupClusters(entries) {
+  const T = entries.map(tokenSet);
+  const out = [];
+  for (let j = 0; j < entries.length; j++) {
+    let best = null;
+    for (let i = 0; i < entries.length; i++) {
+      if (i === j) continue;
+      const a = T[i], b = T[j];
+      if (!b.size) continue;
+      let inter = 0;
+      for (const x of b) if (a.has(x)) inter++;
+      const cover = inter / b.size;
+      const dominates = T[i].size > T[j].size || (T[i].size === T[j].size && i < j);
+      if (cover >= 0.85 && dominates && (!best || cover > best.cover)) best = { i, cover };
+    }
+    if (!best) continue;
+    const residual = [...T[j]].filter((x) => !T[best.i].has(x));
+    out.push({ drop: j, keep: best.i, cover: best.cover, chars: entries[j].length, residual });
+  }
+  return out;
+}
+
+function main() {
+  const cfg = readConfig();
+  const enforced = cfg.memoryMode !== "policy-only";
+  const { rows, error } = loadIndex();
+  const stores = buildStores().map((s) => analyse(s, cfg, rows));
+
+  const overLimit = stores.filter((s) => s.usage > 1);
+  const drifting = stores.filter((s) => s.unindexed.length > 0);
+  const phantomStores = stores.filter((s) => s.phantom.length > 0);
+
+  if (AS_JSON) {
+    console.log(JSON.stringify({ enforced, memoryMode: cfg.memoryMode, limitNote: "advisory unless enforced", indexError: error, stores }, null, 2));
+    return (drifting.length || phantomStores.length) ? 1 : 0;
+  }
+
+  if (!QUIET) {
+    console.log("pi-memory-doctor");
+    console.log(`  config:              ${CONFIG_FILE}`);
+    console.log(`  memoryMode:          ${cfg.memoryMode}  -> character limits are ${enforced ? "ENFORCED (overflow can trigger auto-consolidation)" : "ADVISORY (never enforced; overflow is harmless)"}`);
+    console.log(`  index:               ${error ? error : `${rows.length} rows from ${DB_FILE}`}`);
+    console.log("");
+    console.log("  " + "store".padEnd(36) + "entries".padStart(8) + "chars".padStart(8) + "limit".padStart(8) + "used".padStart(7) + "unindexed".padStart(11) + "phantom".padStart(9));
+    for (const s of stores.sort((a, b) => b.usage - a.usage)) {
+      const flag = s.usage > 1 ? "!" : " ";
+      console.log(
+        flag + " " + s.label.padEnd(36) +
+        String(s.entries.length).padStart(8) +
+        String(s.chars).padStart(8) +
+        String(s.limit).padStart(8) +
+        (Math.round(s.usage * 100) + "%").padStart(7) +
+        String(s.unindexed.length).padStart(11) +
+        String(s.phantom.length).padStart(9)
+      );
+    }
+    console.log("");
+  }
+
+  if (overLimit.length && !QUIET) {
+    console.log(`  ${overLimit.length} store(s) over limit - harmless while limits are advisory, but it does mean nothing is curating them.`);
+  }
+
+  if (drifting.length) {
+    console.log(`  DRIFT: ${drifting.length} store(s) have entries missing from the search index (search will miss them):`);
+    for (const s of drifting) {
+      console.log(`    ${s.label}: ${s.unindexed.length} of ${s.entries.length}`);
+      for (const u of s.unindexed.slice(0, 3)) console.log(`       - ${u.replace(/\s+/g, " ").slice(0, 88)}`);
+      if (s.unindexed.length > 3) console.log(`       ... +${s.unindexed.length - 3} more`);
+    }
+  }
+
+  if (phantomStores.length) {
+    console.log(`  PHANTOM: ${phantomStores.length} store(s) have index rows absent from the markdown. This is the "No entry matched" failure mode:`);
+    for (const s of phantomStores) {
+      console.log(`    ${s.label}: ${s.phantom.length} phantom row(s)`);
+      for (const p of s.phantom.slice(0, 3)) console.log(`       - ${String(p.content).replace(/\s+/g, " ").slice(0, 88)}`);
+    }
+  }
+
+  if (SHOW_DUPES) {
+    console.log("");
+    console.log("  near-duplicate entries (coverage >= 0.85). residual <= 3 is usually safe to drop:");
+    let total = 0;
+    for (const s of stores) {
+      const clusters = dupClusters(s.entries);
+      if (!clusters.length) continue;
+      console.log(`    ${s.label}: ${clusters.length} redundant entr(ies), ~${clusters.reduce((a, c) => a + c.chars, 0)} chars`);
+      for (const c of clusters.sort((a, b) => b.chars - a.chars).slice(0, 8)) {
+        const verdict = c.residual.length === 0 ? "SAFE (exact dup)" : c.residual.length <= 3 ? "LIKELY SAFE" : "REVIEW";
+        console.log(`      drop #${c.drop} (${c.chars} chars, cover ${c.cover.toFixed(2)}, residual ${c.residual.length}) [${verdict}]`);
+        if (c.residual.length) console.log(`         unique: ${c.residual.slice(0, 14).join(" ")}`);
+      }
+      total += clusters.length;
+    }
+    if (!total) console.log("    none found");
+  }
+
+  if (drifting.length || phantomStores.length) {
+    console.log("");
+    console.log("  to repair, run this in an INTERACTIVE pi session (print mode does not dispatch commands):");
+    console.log("    /memory-sync-markdown");
+    return 1;
+  }
+
+  if (!QUIET) console.log("  index is consistent with the markdown stores.");
+  return 0;
+}
+
+process.exit(main());
