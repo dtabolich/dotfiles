@@ -126,7 +126,7 @@ in
     # listing & files
     eza # ls replacement (exa successor) with icons/git
     yazi # fast rust terminal file manager
-    glow # markdown viewer
+    mdcat # markdown -> stdout for pipes/scripts; leaf is the interactive viewer
     # git
     difftastic # syntax-aware diff (AST-aware)
     git-absorb # automatic fixup commits for stacked branches
@@ -261,6 +261,10 @@ in
       if (( $+commands[bat] )); then
         alias cat='bat --paging=never'
       fi
+      # leaf (Homebrew formula) is the interactive markdown viewer.
+      if (( $+commands[leaf] )); then
+        alias md='leaf'
+      fi
       if (( $+commands[eza] )); then
         alias ls='eza --group-directories-first'
         alias ll='eza -l --group-directories-first --git --icons'
@@ -392,6 +396,10 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
   home.file.".config/yazi".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/yazi";
+  # leaf: link the config file only, not the directory, so leaf state (file
+  # history etc.) stays in ~/.config/leaf instead of landing in the repo.
+  home.file.".config/leaf/config.toml".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/leaf/config.toml";
   home.file.".config/herdr".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/herdr";
   home.file.".config/mise".source =

@@ -8,11 +8,22 @@
 # Openers are inherited from the preset, notably:
 #   edit   = ${EDITOR:-vi} %s   (blocking)  -> nvim on this machine
 #   open   = system opener, extract, play, reveal
+#
+# [opener] MERGES with the preset (only [open].rules replaces it), so defining
+# `leaf` here keeps edit/open/reveal available.
+
+[opener]
+leaf = [
+  { run = "leaf %s", desc = "leaf (markdown preview)", for = "unix", block = true },
+]
 
 [open]
 rules = [
   # Folder
   { url = "*/", use = [ "edit", "open", "reveal" ] },
+  # Markdown -> leaf renders it; `open --interactive` still offers nvim.
+  # Matched by extension, not mime: macOS `file` reports .md as text/plain.
+  { url = "*.{md,markdown}", use = [ "leaf", "edit", "reveal" ] },
   # Text
   { mime = "text/*", use = [ "edit", "reveal" ] },
   # Image

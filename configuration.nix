@@ -52,6 +52,10 @@
     # Minimal brew: darwin gaps + agent multiplexer. Everyday CLIs live in home.nix.
     brews = [
       "herdr"
+      # Markdown viewer (TUI). Formula is leaf-markdown-viewer, NOT "leaf" -
+      # the plain "leaf" formula is an unrelated, deprecated Go reloader and
+      # the two conflict. Upgrades come from rebuild, not `leaf --update`.
+      "leaf-markdown-viewer"
       "pi-coding-agent"
       "kimi-code"
       "colima"

@@ -29,9 +29,10 @@ Everything here comes from `home.nix` and the symlinked configs under `home/`.
 
 ## Files and viewing
 
-- `yazi` - terminal file manager (`yazi` to launch, `q` to quit).
+- `yazi` - terminal file manager (`yazi` to launch, `q` to quit). Enter on a `.md` file opens it in `leaf`; `open --interactive` still offers nvim.
 - `eza` replaces `ls`; `bat` replaces `cat` (alias above).
-- `glow <file.md>` renders markdown in the terminal.
+- `leaf <file.md>` (alias `md`) - interactive markdown previewer: math and Mermaid rendering, sidebar TOC, `Ctrl+E` to edit, `-w` to watch for changes.
+- `mdcat <file.md>` - streams rendered markdown to stdout, for pipes and scripts (`mdcat README.md | less`).
 - `tree` is not aliased - use `lt` for a 2-level eza tree, or `eza -l --tree --level=N`.
 
 ## Git

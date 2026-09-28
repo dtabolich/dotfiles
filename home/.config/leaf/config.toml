@@ -1,0 +1,30 @@
+# leaf configuration - versioned in dotfiles so a fresh machine gets the same
+# viewer. leaf itself is installed by Homebrew (see configuration.nix); this is
+# the only leaf state that lives in the repo.
+#
+# Full schema, defaults and priority rules:
+#   https://github.com/RivoLink/leaf/blob/main/config.toml
+# Priority is always: CLI flag > LEAF_* env var > this file > built-in default.
+
+# Color theme. Built-in: arctic, forest, ocean, solarized-dark.
+# May also point at a custom theme file (relative paths resolve from this dir).
+theme = "ocean"
+
+# Editor for Ctrl+E. Default is nano; nvim is $EDITOR on this machine.
+# {$line} jumps to the first visible source line; {$path} is also available.
+editor = 'nvim +{$line}'
+
+# Auto-reload when the underlying file changes. Per-run override: `leaf -w`.
+watch = false
+
+# Line numbers inside fenced code blocks.
+code-line-numbers = true
+
+# Extra extensions offered by the picker alongside markdown.
+extras = ["txt"]
+
+# Left at leaf's defaults on purpose - uncomment to change:
+# width = 80                   # cap content width (default: full terminal width)
+# file-picker-width = "75%"    # picker width
+# tab-title-length = -1        # terminal tab title truncation (-1: none)
+# file-history-length = 0      # recent files in the picker (0 disables, max 50)

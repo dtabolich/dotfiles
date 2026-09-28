@@ -19,7 +19,7 @@ Running the switch builds:
 - Nix user packages for everyday and cloud/k8s CLIs (ripgrep, fd, fzf, bat, gh, kubectl, helm, aws/azure/gcloud CLIs, and more)
 - Python from Nix (`python313` plus the mkdocs toolchain and `pipx`), so it never links a Homebrew library that `zap` can delete
 - mise for Node (global default in `home/.config/mise/config.toml`; per-project Node/Python overrides via `.mise.toml`)
-- Minimal Homebrew: Colima/Docker CLI stack, `herdr`, and GUI/darwin casks (WezTerm, .NET SDK, etc.)
+- Minimal Homebrew: Colima/Docker CLI stack, `herdr`, the `leaf` markdown viewer, and GUI/darwin casks (WezTerm, .NET SDK, etc.)
 - PowerShell via Nix (`pwsh`); the Homebrew powershell cask currently breaks `brew bundle`
 - Shell (home-manager zsh, aliases, starship, direnv, zoxide) - not Oh My Zsh
 - Editor (Neovim config with the rose-pine moon theme)
